@@ -1,0 +1,213 @@
+import 'package:flutter/material.dart';
+import '../models/missao.dart';
+
+class MissionCard extends StatefulWidget {
+  final Missao missao;
+  final ValueChanged<Missao> onMissaoAtualizada;
+
+  const MissionCard({
+    super.key,
+    required this.missao,
+    required this.onMissaoAtualizada,
+  });
+
+  @override
+  State<MissionCard> createState() => _MissionCardState();
+}
+
+class _MissionCardState extends State<MissionCard> {
+  bool _estaExpandido = false;
+
+  Color _corPrioridade(String prioridade) {
+    switch (prioridade) {
+      case 'alta':
+        return Colors.red;
+      case 'media':
+        return Colors.amber;
+      case 'baixa':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _tituloPrioridade(String prioridade) {
+    switch (prioridade) {
+      case 'alta':
+        return 'Alta';
+      case 'media':
+        return 'Média';
+      case 'baixa':
+        return 'Baixa';
+      default:
+        return 'Sem prioridade';
+    }
+  }
+
+  void _atualizarMissao() {
+    widget.onMissaoAtualizada(widget.missao);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final corPrioridade = _corPrioridade(widget.missao.prioridade);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16.0),
+      decoration: BoxDecoration(
+        color: const Color(0xFF252536),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: widget.missao.concluida ? Colors.greenAccent : const Color(0xFF3A3A54),
+          width: 1.4,
+        ),
+      ),
+      child: Column(
+        children: [
+          InkWell(
+            onTap: () {
+              setState(() {
+                _estaExpandido = !_estaExpandido;
+              });
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 16.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.missao.titulo,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            decoration: widget.missao.concluida ? TextDecoration.lineThrough : null,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Color.fromRGBO(
+                              corPrioridade.r.toInt(),
+                              corPrioridade.g.toInt(),
+                              corPrioridade.b.toInt(),
+                              0.18,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            _tituloPrioridade(widget.missao.prioridade),
+                            style: TextStyle(
+                              color: corPrioridade,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        widget.missao.concluida = !widget.missao.concluida;
+                        _atualizarMissao();
+                      });
+                    },
+                    child: Icon(
+                      widget.missao.concluida ? Icons.check_circle : Icons.radio_button_unchecked,
+                      color: widget.missao.concluida ? Colors.greenAccent : Colors.grey,
+                      size: 28,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_estaExpandido) ...[
+            const Divider(color: Colors.white24, height: 1),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (widget.missao.descricao.isNotEmpty) ...[
+                    const Text(
+                      'Descrição',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      widget.missao.descricao,
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  const Text(
+                    'Micro-passos',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  if (widget.missao.microPassos.isEmpty)
+                    const Text(
+                      'Nenhum micro-passo adicionado.',
+                      style: TextStyle(color: Colors.white54),
+                    )
+                  else
+                    Column(
+                      children: widget.missao.microPassos.map(
+                        (micro) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 10.0),
+                            child: Row(
+                              children: [
+                                GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      micro.concluido = !micro.concluido;
+                                      _atualizarMissao();
+                                    });
+                                  },
+                                  child: Icon(
+                                    micro.concluido ? Icons.check_circle : Icons.radio_button_unchecked,
+                                    color: micro.concluido ? Colors.greenAccent : Colors.grey,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    micro.descricao,
+                                    style: TextStyle(
+                                      color: micro.concluido ? Colors.white54 : Colors.white,
+                                      decoration: micro.concluido ? TextDecoration.lineThrough : null,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ).toList(),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
