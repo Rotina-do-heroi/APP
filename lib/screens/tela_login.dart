@@ -37,8 +37,16 @@ class _TelaLoginState extends State<TelaLogin> {
       _isLoading = true;
     });
 
+<<<<<<< HEAD
     // Define a URL base para a API hospedada na nuvem
     const String baseUrl = 'https://api-autenticacao-production.up.railway.app';
+=======
+    // Define a URL base dinamicamente (10.0.2.2 para emulador Android, localhost para web/desktop)
+    String baseUrl = 'https://api-autenticacao-production.up.railway.app';
+    if (!kIsWeb && Platform.isAndroid) {
+      baseUrl = 'http://10.0.2.2:3000';
+    }
+>>>>>>> e22e529072ea97b1c457a44ff3de7ad3e1138074
 
     final url = Uri.parse(_isLogin ? '$baseUrl/login' : '$baseUrl/register');
     
@@ -63,11 +71,12 @@ class _TelaLoginState extends State<TelaLogin> {
           await prefs.setString('jwt_token', token);
 
           // Extrai e salva o Nome do usuário para uso offline/fallback
-          String? userName = responseData['name'] ?? responseData['nome'];
+          String? userName = responseData['user']?['name'];
           if (userName == null && responseData['user'] != null) userName = responseData['user']['name'] ?? responseData['user']['nome'];
           if (userName == null && responseData['usuario'] != null) userName = responseData['usuario']['nome'] ?? responseData['usuario']['name'];
           if (userName != null) {
             await prefs.setString('user_name', userName);
+           await prefs.setString('user_id', responseData['user']?['id'].toString() ?? '');
           }
         }
 
