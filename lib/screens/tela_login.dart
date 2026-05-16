@@ -73,6 +73,7 @@ class _TelaLoginState extends State<TelaLogin> {
           if (userName == null && responseData['usuario'] != null) userName = responseData['usuario']['nome'] ?? responseData['usuario']['name'];
           if (userName != null) {
             await prefs.setString('user_name', userName);
+           await prefs.setString('user_id', responseData['user']?['id'].toString() ?? '');
           }
         }
 
