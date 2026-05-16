@@ -1,11 +1,11 @@
 // Arquivo: lib/screens/tela_hiperfoco.dart
 import 'package:flutter/material.dart';
 import 'dart:convert';
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async'; // <-- IMPORTANTE: Biblioteca para usar o Timer
+import '../models/missao.dart';
+import 'tela_inicial.dart'; // Importa missoesNotifier e apiMissoesUrl
 
 class TelaHiperfoco extends StatefulWidget {
   const TelaHiperfoco({super.key});
@@ -22,58 +22,24 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
   // Variáveis do Cronômetro
   Timer? _timer;
   int _segundosRestantes = 25 * 60; // Começa com 25 minutos em segundos
-
-  // Lista de tarefas vindas da API
-  List<dynamic> _tarefas = [];
-  bool _isLoadingTarefas = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchTarefas();
-  }
-
-  Future<void> _fetchTarefas() async {
-    String baseUrl = 'http://localhost:3000';
-    if (!kIsWeb && Platform.isAndroid) {
-      baseUrl = 'http://10.0.2.2:3000';
-    }
-
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('jwt_token') ?? '';
-
-      // ATENÇÃO: Verifique se a rota para listar as tarefas é '/tarefas'
-      final response = await http.get(
-        Uri.parse('$baseUrl/tarefas'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (mounted) {
-          setState(() {
-            // Tenta lidar com array direto ou objeto { "tarefas": [...] }
-            _tarefas = data is List ? data : (data['tarefas'] ?? []);
-            _isLoadingTarefas = false;
-          });
-        }
-      } else {
-        if (mounted) setState(() => _isLoadingTarefas = false);
-      }
-    } catch (e) {
-      if (mounted) setState(() => _isLoadingTarefas = false);
-    }
-  }
-
+  
   // Limpa o timer da memória quando a tela for fechada (Boa prática de performance)
   @override
   void dispose() {
     _timer?.cancel();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Verifica se o usuário veio do botão de Foco Rápido
+    if (autoStartTimerNotifier.value) {
+      autoStartTimerNotifier.value = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _iniciarPausarTimer(); // Dá play automático no timer
+      });
+    }
   }
 
   // --- LÓGICA DO CRONÔMETRO ---
@@ -103,6 +69,7 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
             
             if (_modoAtual == 0) {
               _salvarSessaoFoco(); // Salva a sessão de estudo no back-end
+              _processarFimDeSessaoDaMissao();
             }
           }
         });
@@ -110,18 +77,94 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
     }
   }
 
-  Future<void> _salvarSessaoFoco() async {
-    String baseUrl = 'http://localhost:3000';
-    if (!kIsWeb && Platform.isAndroid) {
-      baseUrl = 'http://10.0.2.2:3000';
-    }
+  Future<void> _processarFimDeSessaoDaMissao() async {
+    if (missaoSelecionadaNotifier.value != null && !missaoSelecionadaNotifier.value!.concluida) {
+      final missao = missaoSelecionadaNotifier.value!;
+      missao.sessoesConcluidas++;
+      
+      if (missao.sessoesConcluidas >= missao.sessoesNecessarias) {
+        missao.concluida = true;
+        if (mounted) {
+          _mostrarParabens(missao);
+        }
+        missaoSelecionadaNotifier.value = null; // Tira a seleção
+      }
+      
+      // Atualiza a lista globalmente para refletir na tela inicial
+      missoesNotifier.value = List.from(missoesNotifier.value);
 
+      // --- ATUALIZA O PROGRESSO NO BANCO DE DADOS (API) ---
+      if (missao.id != null) {
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          final token = prefs.getString('jwt_token') ?? '';
+          
+          await http.put(
+            Uri.parse('$apiMissoesUrl/tarefas/${missao.id}'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+            body: jsonEncode({
+              'sessoesConcluidas': missao.sessoesConcluidas,
+              'concluida': missao.concluida,
+            }),
+          );
+        } catch (e) {
+          debugPrint('Erro ao atualizar progresso na API: $e');
+        }
+      }
+    }
+  }
+
+  void _mostrarParabens(Missao missao) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1E2A) : Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.workspace_premium, color: Colors.amber, size: 80),
+                const SizedBox(height: 16),
+                const Text(
+                  'MISSÃO CONCLUÍDA!',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.amber),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  missao.titulo,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16, color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black87),
+                ),
+                const SizedBox(height: 16),
+                const Text('Você ganhou XP e está mais forte!', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6B4EFF), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12)),
+                  child: const Text('Continuar', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                )
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _salvarSessaoFoco() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('jwt_token') ?? '';
 
       final response = await http.post(
-        Uri.parse('$baseUrl/hiperfoco/sessao'),
+        Uri.parse('$apiMissoesUrl/hiperfoco/sessao'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -387,12 +430,18 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
                   ),
                   const SizedBox(height: 16),
 
-                  if (_isLoadingTarefas)
-                    const Center(child: CircularProgressIndicator(color: Color(0xFF6B4EFF)))
-                  else if (_tarefas.isEmpty)
-                    const Center(child: Padding(padding: EdgeInsets.all(16), child: Text('Nenhuma tarefa pendente.', style: TextStyle(color: Colors.grey))))
-                  else
-                    ..._tarefas.map((tarefa) => _buildTarefa(tarefa, isDark)).toList(),
+                  ValueListenableBuilder<List<Missao>>(
+                    valueListenable: missoesNotifier,
+                    builder: (context, missoesAtuais, _) {
+                      if (missoesAtuais.isEmpty) {
+                        return const Center(child: Padding(padding: EdgeInsets.all(16), child: Text('Nenhuma tarefa pendente.', style: TextStyle(color: Colors.grey))));
+                      }
+                      // Exibe a lista global de missões que vem da tela_inicial
+                      return Column(
+                        children: missoesAtuais.map((missao) => _buildTarefa(missao, isDark)).toList(),
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
@@ -439,91 +488,80 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
     );
   }
 
-  Future<void> _toggleTarefa(Map<String, dynamic> tarefa) async {
-    // Optimistic Update: atualiza a interface antes mesmo de a API responder
+  void _selecionarTarefa(Missao missao) {
+    if (missao.concluida) return; // Não faz nada se já estiver concluída
+
     setState(() {
-      if (tarefa['concluida'] != null) {
-        tarefa['concluida'] = !tarefa['concluida'];
-      } else if (tarefa['status'] != null) {
-        tarefa['status'] = tarefa['status'] == 'concluida' ? 'pendente' : 'concluida';
+      if (missaoSelecionadaNotifier.value == missao) {
+        missaoSelecionadaNotifier.value = null; // Desmarca
       } else {
-        tarefa['concluida'] = true;
+        missaoSelecionadaNotifier.value = missao; // Seleciona
       }
     });
-
-    String baseUrl = 'http://localhost:3000';
-    if (!kIsWeb && Platform.isAndroid) baseUrl = 'http://10.0.2.2:3000';
-    
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('jwt_token') ?? '';
-      
-      final response = await http.put(
-        Uri.parse('$baseUrl/tarefas/${tarefa['id']}'), 
-        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
-        body: jsonEncode({'concluida': tarefa['concluida'] ?? (tarefa['status'] == 'concluida')}),
-      );
-
-      if (response.statusCode != 200 && response.statusCode != 201) {
-        if (mounted) {
-          // Reverte a marcação visual da caixinha porque a API falhou
-          setState(() {
-            if (tarefa['concluida'] != null) tarefa['concluida'] = !tarefa['concluida'];
-            else if (tarefa['status'] != null) tarefa['status'] = tarefa['status'] == 'concluida' ? 'pendente' : 'concluida';
-          });
-          // Mostra o erro retornado pelo Node.js
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erro na API: ${response.body}'), backgroundColor: Colors.redAccent, duration: const Duration(seconds: 4)),
-          );
-        }
-      }
-    } catch (e) {
-      debugPrint('Erro ao atualizar tarefa no banco: $e');
-    }
   }
 
-  Widget _buildTarefa(Map<String, dynamic> tarefa, bool isDark) {
-    bool isConcluida = tarefa['concluida'] == true || tarefa['status'] == 'concluida';
-    String titulo = tarefa['titulo'] ?? tarefa['title'] ?? tarefa['descricao'] ?? 'Tarefa sem título';
+  Widget _buildTarefa(Missao missao, bool isDark) {
+    bool isConcluida = missao.concluida;
+    bool isSelecionada = missaoSelecionadaNotifier.value == missao;
+    String titulo = missao.titulo;
 
     final corFundoSub = isDark ? const Color(0xFF13131A) : Colors.grey.shade100;
     final corBorda = isDark ? const Color(0xFF252536) : Colors.grey.shade300;
     
     return GestureDetector(
-      onTap: () => _toggleTarefa(tarefa),
-      child: Container(
+      onTap: () => _selecionarTarefa(missao),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isConcluida ? const Color.fromRGBO(29, 59, 49, 0.3) : corFundoSub,
+          color: isConcluida ? const Color.fromRGBO(29, 59, 49, 0.3) : (isSelecionada ? const Color(0xFF6B4EFF).withOpacity(0.1) : corFundoSub),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isConcluida ? const Color(0xFF4ADE80) : corBorda,
-            width: 1.5,
+            color: isConcluida ? const Color(0xFF4ADE80) : (isSelecionada ? const Color(0xFF6B4EFF) : corBorda),
+            width: isSelecionada ? 2.0 : 1.5,
           ),
         ),
         child: Row(
           children: [
             Container(
               decoration: BoxDecoration(
-                color: isConcluida ? const Color(0xFF4ADE80) : Colors.transparent,
+                color: isConcluida ? const Color(0xFF4ADE80) : (isSelecionada ? const Color(0xFF6B4EFF) : Colors.transparent),
                 borderRadius: BorderRadius.circular(4),
+                border: Border.all(
+                  color: isConcluida ? const Color(0xFF4ADE80) : (isSelecionada ? const Color(0xFF6B4EFF) : corBorda),
+                )
               ),
               child: Icon(
-                isConcluida ? Icons.check : Icons.crop_square,
-                color: isConcluida ? (isDark ? const Color(0xFF1E1E2A) : Colors.white) : corBorda,
+                isConcluida ? Icons.check : (isSelecionada ? Icons.my_location : Icons.crop_square),
+                color: isConcluida || isSelecionada ? (isDark ? const Color(0xFF1E1E2A) : Colors.white) : corBorda,
                 size: 20,
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                titulo,
-                style: TextStyle(
-                color: isConcluida ? Colors.grey : (isDark ? Colors.white : Colors.black87),
-                  fontWeight: FontWeight.w500,
-                  decoration: isConcluida ? TextDecoration.lineThrough : null,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    titulo,
+                    style: TextStyle(
+                      color: isConcluida ? Colors.grey : (isDark ? Colors.white : Colors.black87),
+                      fontWeight: isSelecionada ? FontWeight.bold : FontWeight.w500,
+                      decoration: isConcluida ? TextDecoration.lineThrough : null,
+                    ),
+                  ),
+                  if (!isConcluida) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Sessões: ${missao.sessoesConcluidas} / ${missao.sessoesNecessarias}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isSelecionada ? const Color(0xFF6B4EFF) : Colors.grey,
+                      ),
+                    ),
+                  ]
+                ],
               ),
             ),
           ],

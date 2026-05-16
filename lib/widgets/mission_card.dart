@@ -4,11 +4,13 @@ import '../models/missao.dart';
 class MissionCard extends StatefulWidget {
   final Missao missao;
   final ValueChanged<Missao> onMissaoAtualizada;
+  final VoidCallback onDeletarMissao;
 
   const MissionCard({
     super.key,
     required this.missao,
     required this.onMissaoAtualizada,
+    required this.onDeletarMissao,
   });
 
   @override
@@ -46,6 +48,43 @@ class _MissionCardState extends State<MissionCard> {
 
   void _atualizarMissao() {
     widget.onMissaoAtualizada(widget.missao);
+  }
+
+  void _confirmarDelecao(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1E1E2A),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.orangeAccent),
+              SizedBox(width: 8),
+              Text('Deletar Missão', style: TextStyle(color: Colors.white)),
+            ],
+          ),
+          content: const Text(
+            'Tem certeza que deseja abandonar esta missão? Ela será excluída permanentemente.',
+            style: TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                widget.onDeletarMissao();
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+              child: const Text('Deletar', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -88,32 +127,80 @@ class _MissionCardState extends State<MissionCard> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Color.fromRGBO(
-                              corPrioridade.r.toInt(),
-                              corPrioridade.g.toInt(),
-                              corPrioridade.b.toInt(),
-                              0.18,
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Color.fromRGBO(
+                                  corPrioridade.r.toInt(),
+                                  corPrioridade.g.toInt(),
+                                  corPrioridade.b.toInt(),
+                                  0.18,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                _tituloPrioridade(widget.missao.prioridade),
+                                style: TextStyle(
+                                  color: corPrioridade,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
                             ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            _tituloPrioridade(widget.missao.prioridade),
-                            style: TextStyle(
-                              color: corPrioridade,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
+                            const SizedBox(width: 8),
+                            // Badge de Sessões de Foco
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF6B4EFF).withOpacity(0.18),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.timer, size: 12, color: Color(0xFF6B4EFF)),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${widget.missao.sessoesConcluidas}/${widget.missao.sessoesNecessarias}',
+                                    style: const TextStyle(
+                                      color: Color(0xFF6B4EFF),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
+                          ],
                         ),
                       ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () => _confirmarDelecao(context),
+                    child: const Icon(
+                      Icons.delete_outline,
+                      color: Colors.redAccent,
+                      size: 26,
                     ),
                   ),
                   const SizedBox(width: 12),
                   GestureDetector(
                     onTap: () {
+                      // Verifica se o usuário está tentando concluir sem ter as sessões necessárias
+                      if (!widget.missao.concluida && widget.missao.sessoesConcluidas < widget.missao.sessoesNecessarias) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Use o Modo Foco! Faltam ${widget.missao.sessoesNecessarias - widget.missao.sessoesConcluidas} sessão(ões).'),
+                            backgroundColor: Colors.orangeAccent,
+                            duration: const Duration(seconds: 3),
+                          ),
+                        );
+                        return; // Impede que o código continue e marque como concluída
+                      }
+
                       setState(() {
                         widget.missao.concluida = !widget.missao.concluida;
                         _atualizarMissao();

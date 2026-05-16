@@ -1,13 +1,11 @@
 // Arquivo: lib/widgets/hero_perfil.dart
 import 'package:flutter/material.dart';
 import 'dart:convert';
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../main.dart'; // Importa o main.dart para acessar o temaNotifier
 import '../screens/tela_inventario.dart'; // Importa a nova tela de inventário
-import 'modal_hiperfoco.dart'; // Importa a nova janela modal de foco
+import '../screens/tela_inicial.dart'; // Para acessar os Notifiers do foco
 
 class HeroPerfil extends StatefulWidget {
   const HeroPerfil({super.key});
@@ -41,10 +39,7 @@ class _HeroPerfilState extends State<HeroPerfil> {
   }
 
   Future<void> _fetchDadosPerfil() async {
-    String baseUrl = 'http://localhost:3000';
-    if (!kIsWeb && Platform.isAndroid) {
-      baseUrl = 'http://10.0.2.2:3000';
-    }
+    const String baseUrl = 'https://api-geral-production.up.railway.app';
 
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -72,8 +67,14 @@ class _HeroPerfilState extends State<HeroPerfil> {
             _nivelAtual = data['nivel'] ?? 1;
             _xpAtual = data['xp'] ?? 0;
             _itemEquipadoId = data['itemEquipadoId'] ?? 1;
-            if (data['user'] != null && data['user']['name'] != null) {
-              _nome = data['user']['name'];
+            
+            // Extrai o nome de diversas formas que o back-end possa retornar
+            String? nomeApi = data['name'] ?? data['nome'];
+            if (nomeApi == null && data['user'] != null) nomeApi = data['user']['name'] ?? data['user']['nome'];
+            
+            if (nomeApi != null && nomeApi.isNotEmpty) {
+              _nome = nomeApi;
+              prefs.setString('user_name', nomeApi); // Salva o nome no cache para uso na próxima vez
             }
           });
         }
@@ -249,10 +250,23 @@ class _HeroPerfilState extends State<HeroPerfil> {
               corFundo: const Color(0xFFA855F7),
               corIcone: Colors.white,
               onTap: () {
-                showDialog(
-                  context: context,
-                  builder: (context) => const ModalHiperfoco(),
-                );
+                // Pega apenas as missões que ainda não foram concluídas
+                final missoesPendentes = missoesNotifier.value.where((m) => !m.concluida).toList();
+
+                if (missoesPendentes.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Você não tem nenhuma missão pendente! 🏆'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                  return;
+                }
+
+                // Seleciona a primeira missão pendente e ativa o auto-start
+                missaoSelecionadaNotifier.value = missoesPendentes.first;
+                autoStartTimerNotifier.value = true;
+                abaAtualNotifier.value = 1; // Navega automaticamente para a Tela de Foco!
               },
             ),
             const SizedBox(width: 8),
@@ -266,6 +280,16 @@ class _HeroPerfilState extends State<HeroPerfil> {
                   context,
                   MaterialPageRoute(builder: (context) => const TelaInventario()),
                 );
+              },
+            ),
+            const SizedBox(width: 8),
+            _buildBotaoAcao(
+              icone: Icons.help_outline,
+              corFundo: isDark ? const Color(0xFF1E1E2A) : Colors.white,
+              corIcone: isDark ? Colors.blueAccent : Colors.blue,
+              corBorda: isDark ? const Color(0xFF2E2E40) : Colors.grey.shade300,
+              onTap: () {
+                showAppTutorial(context); // Chama o tutorial novamente!
               },
             ),
             const SizedBox(width: 8),

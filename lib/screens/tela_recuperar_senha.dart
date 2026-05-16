@@ -17,7 +17,7 @@ class _TelaRecuperarSenhaState extends State<TelaRecuperarSenha> {
   
   int _passoAtual = 0; // 0 = Email, 1 = Código, 2 = Nova Senha
   bool _isLoading = false;
-  final String _apiUrl = 'http://localhost:3000'; // Altere conforme necessário
+  final String _apiUrl = 'https://api-autenticacao-production.up.railway.app';
 
   @override
   void dispose() {

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../main.dart'; // Para navegar até a TelaPrincipal após o login
@@ -39,11 +37,8 @@ class _TelaLoginState extends State<TelaLogin> {
       _isLoading = true;
     });
 
-    // Define a URL base dinamicamente (10.0.2.2 para emulador Android, localhost para web/desktop)
-    String baseUrl = 'http://localhost:3000';
-    if (!kIsWeb && Platform.isAndroid) {
-      baseUrl = 'http://10.0.2.2:3000';
-    }
+    // Define a URL base para a API hospedada na nuvem
+    const String baseUrl = 'https://api-autenticacao-production.up.railway.app';
 
     final url = Uri.parse(_isLogin ? '$baseUrl/login' : '$baseUrl/register');
     

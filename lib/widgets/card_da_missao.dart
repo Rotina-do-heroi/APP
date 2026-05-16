@@ -20,6 +20,7 @@ class _CardDaMissaoState extends State<CardDaMissao> {
   final List<TextEditingController> _controladoresMicroPassos = [];
   String? _prioridadeSelecionada;
   String? _atributoSelecionado;
+  int _sessoesNecessarias = 1;
 
   @override
   void dispose() {
@@ -42,6 +43,7 @@ class _CardDaMissaoState extends State<CardDaMissao> {
     _controladoresMicroPassos.clear();
     _prioridadeSelecionada = null;
     _atributoSelecionado = null;
+    _sessoesNecessarias = 1;
   }
 
   void _abrirDialogoNovaMissao() {
@@ -262,6 +264,38 @@ class _CardDaMissaoState extends State<CardDaMissao> {
                     ),
                     const SizedBox(height: 16),
                     const Text(
+                      'Sessões de Foco Necessárias',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        IconButton(
+                          onPressed: _sessoesNecessarias > 1
+                              ? () => setState(() => _sessoesNecessarias--)
+                              : null,
+                          icon: const Icon(Icons.remove_circle_outline, color: Colors.white),
+                        ),
+                        Text(
+                          '$_sessoesNecessarias',
+                          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        IconButton(
+                          onPressed: () => setState(() => _sessoesNecessarias++),
+                          icon: const Icon(Icons.add_circle_outline, color: Colors.white),
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'sessão(ões) de 25 min',
+                          style: TextStyle(color: Colors.grey, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
                       'Micro-passos',
                       style: TextStyle(
                         color: Colors.white70,
@@ -391,6 +425,7 @@ class _CardDaMissaoState extends State<CardDaMissao> {
                         tags: _atributoSelecionado != null ? [_atributoSelecionado!] : [],
                         prioridade: _prioridadeSelecionada ?? 'baixa',
                         microPassos: microPassos,
+                        sessoesNecessarias: _sessoesNecessarias,
                       );
                       widget.onCriarMissao(missao);
                       _limparCamposDialogo();
