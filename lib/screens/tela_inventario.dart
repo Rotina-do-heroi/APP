@@ -56,7 +56,7 @@ class _TelaInventarioState extends State<TelaInventario> {
     );
 
     try {
-      String baseUrl = 'http://localhost:3000';
+      String baseUrl = 'https://api-geral-production.up.railway.app';
       if (!kIsWeb && Platform.isAndroid) baseUrl = 'http://10.0.2.2:3000';
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('jwt_token') ?? '';
@@ -78,7 +78,7 @@ class _TelaInventarioState extends State<TelaInventario> {
   }
 
   Future<void> _fetchInventario() async {
-    String baseUrl = 'http://localhost:3000';
+    String baseUrl = 'https://api-geral-production.up.railway.app';
     if (!kIsWeb && Platform.isAndroid) {
       baseUrl = 'http://10.0.2.2:3000';
     }

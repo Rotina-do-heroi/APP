@@ -39,14 +39,7 @@ class _HeroPerfilState extends State<HeroPerfil> {
   }
 
   Future<void> _fetchDadosPerfil() async {
-<<<<<<< HEAD
-    const String baseUrl = 'https://api-geral-production.up.railway.app';
-=======
-    String baseUrl = 'https://api-autenticacao-production.up.railway.app';
-    if (!kIsWeb && Platform.isAndroid) {
-      baseUrl = 'http://10.0.2.2:3000';
-    }
->>>>>>> e22e529072ea97b1c457a44ff3de7ad3e1138074
+    const String baseUrl = 'https://api-autenticacao-production.up.railway.app';
 
     try {
       final prefs = await SharedPreferences.getInstance();
