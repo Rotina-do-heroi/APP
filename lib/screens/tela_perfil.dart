@@ -53,7 +53,7 @@ class _TelaPerfilState extends State<TelaPerfil> {
   }
 
   Future<void> _fetchPerfil() async {
-    String baseUrl = 'http://localhost:3000';
+    String baseUrl = 'https://api-autenticacao-production.up.railway.app';
     if (!kIsWeb && Platform.isAndroid) {
       baseUrl = 'http://10.0.2.2:3000';
     }
@@ -62,7 +62,7 @@ class _TelaPerfilState extends State<TelaPerfil> {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('jwt_token') ?? '';
       final savedName = prefs.getString('user_name');
-
+      _nomeUsuario = savedName ?? 'Herói';
       // Resgata o nome salvo no login para evitar ficar sem nome em caso de erro da API
       if (savedName != null && savedName.isNotEmpty && mounted) {
         setState(() {

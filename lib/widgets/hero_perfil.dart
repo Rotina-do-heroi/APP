@@ -41,7 +41,7 @@ class _HeroPerfilState extends State<HeroPerfil> {
   }
 
   Future<void> _fetchDadosPerfil() async {
-    String baseUrl = 'http://localhost:3000';
+    String baseUrl = 'https://api-autenticacao-production.up.railway.app';
     if (!kIsWeb && Platform.isAndroid) {
       baseUrl = 'http://10.0.2.2:3000';
     }

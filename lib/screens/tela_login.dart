@@ -68,7 +68,7 @@ class _TelaLoginState extends State<TelaLogin> {
           await prefs.setString('jwt_token', token);
 
           // Extrai e salva o Nome do usuário para uso offline/fallback
-          String? userName = responseData['name'] ?? responseData['nome'];
+          String? userName = responseData['user']?['name'];
           if (userName == null && responseData['user'] != null) userName = responseData['user']['name'] ?? responseData['user']['nome'];
           if (userName == null && responseData['usuario'] != null) userName = responseData['usuario']['nome'] ?? responseData['usuario']['name'];
           if (userName != null) {
