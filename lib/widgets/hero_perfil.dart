@@ -36,11 +36,8 @@ class _HeroPerfilState extends State<HeroPerfil> {
   }
 
   Future<void> _fetchDadosPerfil() async {
-<<<<<<< HEAD
     const String baseUrl = 'https://api-autenticacao-production.up.railway.app';
 
-=======
->>>>>>> 48df2747edbd3d03095df8335195f4006ae2ce28
     try {
       // Acessando a API de Perfil estritamente através do Singleton
       final data = await PerfilService.instance.buscarPerfil();

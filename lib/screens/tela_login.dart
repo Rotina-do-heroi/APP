@@ -35,14 +35,11 @@ class _TelaLoginState extends State<TelaLogin> {
       _isLoading = true;
     });
 
-<<<<<<< HEAD
     // Define a URL base para a API hospedada na nuvem
     const String baseUrl = 'https://api-autenticacao-production.up.railway.app';
 
     final url = Uri.parse(_isLogin ? '$baseUrl/login' : '$baseUrl/register');
     
-=======
->>>>>>> 48df2747edbd3d03095df8335195f4006ae2ce28
     try {
       if (_isLogin) {
         await AuthService.login(
