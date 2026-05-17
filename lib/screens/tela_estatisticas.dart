@@ -253,7 +253,7 @@ class _TelaEstatisticasState extends State<TelaEstatisticas> {
                       level: (focValue / 10).floor(),
                       descricao: 'Mede a qualidade da sua concentração e o respeito ao método de Hiperfoco.',
                       criterio: 'Baseado em Sessões de Hiperfoco.',
-                      exemplo: 'Conclua 10 sessões de 25min sem pausas antes da hora para ganhar 1 FOC.',
+                    exemplo: 'Conclua 1 sessão inteira sem pausas para ganhar 1 FOC.',
                       isDark: isDark,
                     ),
                     _buildSkillCard(
@@ -264,7 +264,7 @@ class _TelaEstatisticasState extends State<TelaEstatisticas> {
                       level: (disValue / 10).floor(),
                       descricao: 'Sua capacidade de lidar com tarefas diárias e não deixar pendências.',
                       criterio: 'Baseado em Quantidade de Tarefas.',
-                      exemplo: 'A cada 15 subtarefas concluídas, ganhe 1 DIS.',
+                    exemplo: 'Finalize uma tarefa antes de sair do aplicativo para ganhar 1 DIS.',
                       isDark: isDark,
                     ),
                     _buildSkillCard(
@@ -275,7 +275,7 @@ class _TelaEstatisticasState extends State<TelaEstatisticas> {
                       level: (intValue / 10).floor(),
                       descricao: 'Representa o tempo dedicado ao aprendizado profundo e à absorção de conhecimento.',
                       criterio: 'Baseado em Horas de Estudo.',
-                      exemplo: 'A cada 5 horas acumuladas em "Estudo" ou "Leitura", ganhe 1 INT.',
+                    exemplo: 'A cada 1 hora acumulada em "Estudo" ou "Leitura", ganhe 1 INT.',
                       isDark: isDark,
                     ),
                     _buildSkillCard(
@@ -286,7 +286,7 @@ class _TelaEstatisticasState extends State<TelaEstatisticas> {
                       level: (forValue / 10).floor(),
                       descricao: 'Cuidado com o corpo. Evita o burnout e mantém sua saúde física.',
                       criterio: 'Baseado em Hábitos de Manutenção.',
-                      exemplo: 'Pratique exercícios físicos. A cada 3 dias consecutivos, ganhe 1 FOR.',
+                    exemplo: 'Complete uma missão relacionada a este atributo para ganhar 1 FOR.',
                       isDark: isDark,
                     ),
                     _buildSkillCard(
@@ -297,7 +297,7 @@ class _TelaEstatisticasState extends State<TelaEstatisticas> {
                       level: (conValue / 10).floor(),
                       descricao: 'A constância e a capacidade de manter a rotina mesmo em dias desafiadores.',
                       criterio: 'Baseado em Streaks (Ofensivas).',
-                      exemplo: 'A cada 7 dias seguidos de login e 1 tarefa concluída, ganhe 1 CON.',
+                    exemplo: 'Faça login e conclua pelo menos 1 missão no dia para ganhar 1 CON.',
                       isDark: isDark,
                     ),
                   ],

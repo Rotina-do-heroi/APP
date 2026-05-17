@@ -20,14 +20,15 @@ class _TelaPerfilState extends State<TelaPerfil> {
   // Inventário
   // 'id' único para identificar, 'nome' do item, 'icone', e se foi 'desbloqueado'
   final List<Map<String, dynamic>> _inventario = [
-    {'id': 1, 'nome': 'Set de Couro', 'icone': Icons.security, 'desbloqueado': true},
+    {'id': 0, 'nome': 'Sem armadura', 'icone': Icons.accessibility_new, 'desbloqueado': true},
+    {'id': 1, 'nome': 'Set de Couro', 'icone': Icons.security, 'desbloqueado': false},
     {'id': 2, 'nome': 'Set de Ferro', 'icone': Icons.shield, 'desbloqueado': false},
     {'id': 3, 'nome': 'Set de Ouro', 'icone': Icons.workspace_premium, 'desbloqueado': false},
     {'id': 4, 'nome': 'Set de Diamante', 'icone': Icons.diamond, 'desbloqueado': false},
     {'id': 5, 'nome': 'Set de Netherite', 'icone': Icons.military_tech, 'desbloqueado': false},
   ];
 
-  int _itemEquipadoId = 1;
+  int _itemEquipadoId = 0;
   int _tituloEquipadoId = 1;
   bool _isLoading = true;
   String _nomeUsuario = 'Herói';
@@ -264,7 +265,11 @@ class _TelaPerfilState extends State<TelaPerfil> {
         // Fallback de segurança vazio caso a API retorne null no primeiro login
         List<dynamic> desbloqueados = perfilData['itensDesbloqueados'] ?? [];
         for (var item in _inventario) {
-          item['desbloqueado'] = desbloqueados.contains(item['id']);
+          if (item['id'] == 0) {
+            item['desbloqueado'] = true; // Sempre disponível
+          } else {
+            item['desbloqueado'] = desbloqueados.contains(item['id']);
+          }
         }
 
         _conquistasRecentes = perfilData['conquistasRecentes'];

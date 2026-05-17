@@ -11,14 +11,15 @@ class TelaInventario extends StatefulWidget {
 class _TelaInventarioState extends State<TelaInventario> {
   // O mesmo inventário padrão usado no Perfil
   final List<Map<String, dynamic>> _inventario = [
-    {'id': 1, 'nome': 'Set de Couro', 'icone': Icons.security, 'desbloqueado': true},
+    {'id': 0, 'nome': 'Sem armadura', 'icone': Icons.accessibility_new, 'desbloqueado': true},
+    {'id': 1, 'nome': 'Set de Couro', 'icone': Icons.security, 'desbloqueado': false},
     {'id': 2, 'nome': 'Set de Ferro', 'icone': Icons.shield, 'desbloqueado': false},
     {'id': 3, 'nome': 'Set de Ouro', 'icone': Icons.workspace_premium, 'desbloqueado': false},
     {'id': 4, 'nome': 'Set de Diamante', 'icone': Icons.diamond, 'desbloqueado': false},
     {'id': 5, 'nome': 'Set de Netherite', 'icone': Icons.military_tech, 'desbloqueado': false},
   ];
 
-  int _itemEquipadoId = 1;
+  int _itemEquipadoId = 0;
   int _tituloEquipadoId = 1;
   int _nivelUsuario = 1;
   bool _isLoading = true;
@@ -71,14 +72,18 @@ class _TelaInventarioState extends State<TelaInventario> {
       if (!mounted) return;
       
       setState(() {
-        _itemEquipadoId = data['itemEquipadoId'] ?? 1;
+        _itemEquipadoId = data['itemEquipadoId'] ?? 0;
         _tituloEquipadoId = data['tituloEquipadoId'] ?? 1;
         _nivelUsuario = data['nivel'] ?? 1;
 
         if (data['itensDesbloqueados'] != null) {
           List<dynamic> desbloqueados = data['itensDesbloqueados'];
           for (var item in _inventario) {
-            item['desbloqueado'] = desbloqueados.contains(item['id']);
+            if (item['id'] == 0) {
+              item['desbloqueado'] = true;
+            } else {
+              item['desbloqueado'] = desbloqueados.contains(item['id']);
+            }
           }
         }
         _isLoading = false;

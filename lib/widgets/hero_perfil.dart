@@ -13,11 +13,12 @@ class HeroPerfil extends StatefulWidget {
 
 class _HeroPerfilState extends State<HeroPerfil> {
   String _nome = "Herói";
-  int _itemEquipadoId = 1;
+  int _itemEquipadoId = 0;
 
   // Mapeia o ID do item equipado para o ícone correspondente
   IconData _getIconeEquipado() {
     switch (_itemEquipadoId) {
+      case 0: return Icons.accessibility_new;
       case 1: return Icons.security;
       case 2: return Icons.shield;
       case 3: return Icons.workspace_premium;
@@ -39,7 +40,7 @@ class _HeroPerfilState extends State<HeroPerfil> {
       final data = await PerfilService.buscarPerfil();
       if (!mounted) return;
       setState(() {
-        _itemEquipadoId = data['itemEquipadoId'] ?? 1;
+        _itemEquipadoId = data['itemEquipadoId'] ?? 0;
         _nome = data['nomeUsuario'] ?? 'Herói';
       });
       xpNotifier.value = data['xp'] ?? 0;
