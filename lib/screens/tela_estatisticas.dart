@@ -34,15 +34,17 @@ class _TelaEstatisticasState extends State<TelaEstatisticas> {
 
   Future<void> _verificarTutorial() async {
     final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('user_id') ?? '';
+    final chaveTutorial = 'primeiro_acesso_estatisticas_$userId';
     // Puxa se é o primeiro acesso na tela de Estatísticas
-    final bool primeiroAcesso = prefs.getBool('primeiro_acesso_estatisticas') ?? true;
+    final bool primeiroAcesso = prefs.getBool(chaveTutorial) ?? true;
 
     if (primeiroAcesso) {
       Future.delayed(const Duration(milliseconds: 800), () {
         if (mounted) _showEstatisticasTutorial(context);
       });
       // Salva que o usuário já viu o tutorial dessa tela
-      await prefs.setBool('primeiro_acesso_estatisticas', false);
+      await prefs.setBool(chaveTutorial, false);
     }
   }
 
@@ -57,6 +59,12 @@ class _TelaEstatisticasState extends State<TelaEstatisticas> {
             TargetContent(
               align: ContentAlign.bottom,
               builder: (context, controller) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (_keyGrafico.currentContext != null) {
+                    Scrollable.ensureVisible(_keyGrafico.currentContext!,
+                        duration: const Duration(milliseconds: 300), alignment: 0.5);
+                  }
+                });
                 return Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -86,6 +94,12 @@ class _TelaEstatisticasState extends State<TelaEstatisticas> {
             TargetContent(
               align: ContentAlign.top,
               builder: (context, controller) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (_keyHabilidades.currentContext != null) {
+                    Scrollable.ensureVisible(_keyHabilidades.currentContext!,
+                        duration: const Duration(milliseconds: 300), alignment: 0.5);
+                  }
+                });
                 return Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -124,7 +138,8 @@ class _TelaEstatisticasState extends State<TelaEstatisticas> {
 
   Future<void> _fetchEstatisticas() async {
     try {
-      final estatisticas = await EstatisticasService.buscarEstatisticas();
+      // Acessando a API de Estatísticas estritamente através do Singleton
+      final estatisticas = await EstatisticasService.instance.buscarEstatisticas();
       if (mounted) {
         setState(() {
           focValue = estatisticas['foco'] ?? 0;

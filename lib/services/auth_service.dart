@@ -57,6 +57,13 @@ class AuthService {
     }
   }
 
+  static Future<void> logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('jwt_token');
+    await prefs.remove('user_name');
+    await prefs.remove('user_id');
+  }
+
   static Future<Map<String, dynamic>> enviarEmailRecuperacao(String email) async {
     final url = Uri.parse('$baseUrl/forgot-password');
     

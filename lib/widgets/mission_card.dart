@@ -53,22 +53,23 @@ class _MissionCardState extends State<MissionCard> {
   }
 
   void _confirmarDelecao(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF1E1E2A),
+          backgroundColor: isDark ? const Color(0xFF1E1E2A) : Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Row(
+          title: Row(
             children: [
               Icon(Icons.warning_amber_rounded, color: Colors.orangeAccent),
               SizedBox(width: 8),
-              Text('Deletar Missão', style: TextStyle(color: Colors.white)),
+              Text('Deletar Missão', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
             ],
           ),
-          content: const Text(
+          content: Text(
             'Tem certeza que deseja abandonar esta missão? Ela será excluída permanentemente.',
-            style: TextStyle(color: Colors.white70),
+            style: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
           ),
           actions: [
             TextButton(
@@ -91,15 +92,21 @@ class _MissionCardState extends State<MissionCard> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final corFundo = isDark ? const Color(0xFF252536) : Colors.white;
+    final corBorda = isDark ? const Color(0xFF3A3A54) : Colors.grey.shade300;
+    final corTextoPrincipal = isDark ? Colors.white : Colors.black87;
+    final corTextoSecundario = isDark ? Colors.white70 : Colors.black54;
+
     final corPrioridade = _corPrioridade(widget.missao.prioridade);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16.0),
       decoration: BoxDecoration(
-        color: const Color(0xFF252536),
+        color: corFundo,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: widget.missao.concluida ? Colors.greenAccent : const Color(0xFF3A3A54),
+          color: widget.missao.concluida ? Colors.greenAccent : corBorda,
           width: 1.4,
         ),
       ),
@@ -122,7 +129,7 @@ class _MissionCardState extends State<MissionCard> {
                         Text(
                           widget.missao.titulo,
                           style: TextStyle(
-                            color: Colors.white,
+                            color: corTextoPrincipal,
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             decoration: widget.missao.concluida ? TextDecoration.lineThrough : null,
@@ -228,17 +235,17 @@ class _MissionCardState extends State<MissionCard> {
             ),
           ),
           if (_estaExpandido) ...[
-            const Divider(color: Colors.white24, height: 1),
+            Divider(color: corBorda, height: 1),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (widget.missao.descricao.isNotEmpty) ...[
-                    const Text(
+                    Text(
                       'Descrição',
                       style: TextStyle(
-                        color: Colors.white70,
+                        color: corTextoSecundario,
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                       ),
@@ -246,23 +253,23 @@ class _MissionCardState extends State<MissionCard> {
                     const SizedBox(height: 8),
                     Text(
                       widget.missao.descricao,
-                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      style: TextStyle(color: corTextoPrincipal, fontSize: 14),
                     ),
                     const SizedBox(height: 16),
                   ],
-                  const Text(
+                  Text(
                     'Micro-passos',
                     style: TextStyle(
-                      color: Colors.white70,
+                      color: corTextoSecundario,
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 8),
                   if (widget.missao.microPassos.isEmpty)
-                    const Text(
+                    Text(
                       'Nenhum micro-passo adicionado.',
-                      style: TextStyle(color: Colors.white54),
+                      style: TextStyle(color: isDark ? Colors.white54 : Colors.black38),
                     )
                   else
                     Column(
@@ -281,7 +288,7 @@ class _MissionCardState extends State<MissionCard> {
                                   },
                                   child: Icon(
                                     micro.concluido ? Icons.check_circle : Icons.radio_button_unchecked,
-                                    color: micro.concluido ? Colors.greenAccent : Colors.grey,
+                                    color: micro.concluido ? Colors.greenAccent : (isDark ? Colors.grey : Colors.black45),
                                   ),
                                 ),
                                 const SizedBox(width: 12),
@@ -289,7 +296,7 @@ class _MissionCardState extends State<MissionCard> {
                                   child: Text(
                                     micro.descricao,
                                     style: TextStyle(
-                                      color: micro.concluido ? Colors.white54 : Colors.white,
+                                      color: micro.concluido ? (isDark ? Colors.white54 : Colors.black38) : corTextoPrincipal,
                                       decoration: micro.concluido ? TextDecoration.lineThrough : null,
                                     ),
                                   ),

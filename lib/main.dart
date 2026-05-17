@@ -208,8 +208,10 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
 
   Future<void> _verificarTutorial() async {
     final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('user_id') ?? '';
+    final chaveTutorial = 'primeiro_acesso_tutorial_$userId';
     // Puxa se é o primeiro acesso (se for nulo, significa que é a primeira vez, então é true)
-    final bool primeiroAcesso = prefs.getBool('primeiro_acesso_tutorial') ?? true;
+    final bool primeiroAcesso = prefs.getBool(chaveTutorial) ?? true;
 
     if (primeiroAcesso) {
       // Pequeno delay para garantir que a tela foi renderizada antes de exibir os balões
@@ -217,7 +219,7 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
         if (mounted) showAppTutorial(context);
       });
       // Salva que o usuário já viu o tutorial para não mostrar novamente
-      await prefs.setBool('primeiro_acesso_tutorial', false);
+      await prefs.setBool(chaveTutorial, false);
     }
   }
 
