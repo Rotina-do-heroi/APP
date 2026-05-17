@@ -1,39 +1,41 @@
 import 'dart:convert';
+import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/missao.dart';
 
 class MissaoService {
-  static const String baseUrl = 'https://api-geral-production.up.railway.app';
+  static const baseUrl = 'https://api-geral-production.up.railway.app';
 
   static Future<String?> adicionarMissao(Missao missao) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('jwt_token') ?? '';
-
+      final userId = prefs.getString('user_id');
       final response = await http.post(
-        Uri.parse('$baseUrl/tarefas'),
+        Uri.parse('$baseUrl/missoes'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
         body: jsonEncode({
+          'userId': userId,
           'titulo': missao.titulo,
           'descricao': missao.descricao,
-          'prioridade': missao.prioridade,
+          'prioridade': missao.prioridade.toUpperCase(),
           'sessoesNecessarias': missao.sessoesNecessarias,
           'sessoesConcluidas': missao.sessoesConcluidas,
         }),
       );
-
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = jsonDecode(response.body);
         return data['id']?.toString() ?? data['tarefa']?['id']?.toString();
       } else {
+        debugPrint(response.body);
         throw Exception('Falha ao adicionar missão: ${response.statusCode}');
       }
     } catch (e) {
-      rethrow; // Passa o erro adiante para a UI capturar e printar
+      rethrow;
     }
   }
 

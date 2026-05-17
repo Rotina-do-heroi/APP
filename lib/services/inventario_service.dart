@@ -8,9 +8,7 @@ class InventarioService {
   // Define a URL base dinamicamente, mantendo a regra de plataformas
   static String get baseUrl {
     String url = 'http://localhost:3000';
-    if (!kIsWeb && Platform.isAndroid) {
-      url = 'http://10.0.2.2:3000';
-    }
+
     return url;
   }
 

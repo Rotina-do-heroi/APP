@@ -27,9 +27,6 @@ class PerfilService {
 
   String get baseUrl {
     String url = 'https://api-autenticacao-production.up.railway.app';
-    if (!kIsWeb && Platform.isAndroid) {
-      url = 'http://10.0.2.2:3000';
-    }
     return url;
   }
 
