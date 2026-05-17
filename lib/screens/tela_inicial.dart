@@ -113,9 +113,16 @@ class _TelaInicialTarefasState extends State<TelaInicialTarefas> {
                               .map(
                                 (missao) => MissionCard(
                                   missao: missao,
-                                  onMissaoAtualizada: (updated) {
+                              onMissaoAtualizada: (updated) async {
                                     // Atualiza a lista globalmente se uma missão for editada
                                     missoesNotifier.value = List.from(missoesNotifier.value);
+                                // Atualiza a API para computar o XP de verdade!
+                                if (updated.id != null) {
+                                  await MissaoService.atualizarProgressoMissao(
+                                    updated.id!, updated.sessoesConcluidas, updated.concluida, tags: updated.tags
+                                  );
+                                  if (mounted) await sincronizarProgresso(context); // Chama o XP Global
+                                }
                                   },
                                   onDeletarMissao: () => _deletarMissao(missao),
                                   onFocoRapido: () {

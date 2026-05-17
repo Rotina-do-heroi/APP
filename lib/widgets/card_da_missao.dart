@@ -482,7 +482,7 @@ class _CardDaMissaoState extends State<CardDaMissao> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelecionado ? cor.withOpacity(0.2) : corFundoInput,
+          color: isSelecionado ? cor.withValues(alpha: 0.2) : corFundoInput,
           border: Border.all(
             color: isSelecionado ? cor : corBordaInput,
             width: 2,

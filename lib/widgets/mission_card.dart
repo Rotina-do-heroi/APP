@@ -163,7 +163,7 @@ class _MissionCardState extends State<MissionCard> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF6B4EFF).withOpacity(0.18),
+                                color: const Color(0xFF6B4EFF).withValues(alpha: 0.18),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Row(

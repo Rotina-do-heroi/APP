@@ -4,6 +4,10 @@ import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import '../services/perfil_service.dart';
 import '../services/auth_service.dart';
 import 'tela_login.dart';
+import 'tela_editar_perfil.dart';
+import '../services/inventario_service.dart'; // Importante para poder salvar os itens ao equipá-los pela tela de Perfil
+import '../main.dart'; // Importa os notifiers globais de XP e Nível
+
 
 class TelaPerfil extends StatefulWidget {
   const TelaPerfil({super.key});
@@ -24,11 +28,10 @@ class _TelaPerfilState extends State<TelaPerfil> {
   ];
 
   int _itemEquipadoId = 1;
-  int _nivelUsuario = 1;
-  int _xpUsuario = 0;
   int _tituloEquipadoId = 1;
   bool _isLoading = true;
   String _nomeUsuario = 'Herói';
+  String _emailUsuario = '';
   String _focoSt = '0', _discSt = '0', _intSt = '0', _forSt = '0', _conSt = '0';
   List<dynamic> _conquistasRecentes = [];
 
@@ -68,7 +71,8 @@ class _TelaPerfilState extends State<TelaPerfil> {
 
     if (primeiroAcesso) {
       Future.delayed(const Duration(milliseconds: 800), () {
-        if (mounted) _showPerfilTutorial(context);
+        if (!mounted) return;
+        _showPerfilTutorial(context);
       });
       // Salva que o usuário já viu o tutorial dessa tela
       await prefs.setBool(chaveTutorial, false);
@@ -87,8 +91,9 @@ class _TelaPerfilState extends State<TelaPerfil> {
               align: ContentAlign.bottom,
               builder: (context, controller) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (_keyInfoBasica.currentContext != null) {
-                    Scrollable.ensureVisible(_keyInfoBasica.currentContext!,
+                  final contexto = _keyInfoBasica.currentContext;
+                  if (contexto != null) {
+                    Scrollable.ensureVisible(contexto,
                         duration: const Duration(milliseconds: 300), alignment: 0.5);
                   }
                 });
@@ -96,7 +101,7 @@ class _TelaPerfilState extends State<TelaPerfil> {
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: isDark ? const Color(0xFF252536) : Colors.white,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: const BorderRadius.all(Radius.circular(16)),
                     border: Border.all(color: const Color(0xFF6B4EFF), width: 2),
                     boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
                   ),
@@ -122,8 +127,9 @@ class _TelaPerfilState extends State<TelaPerfil> {
               align: ContentAlign.bottom,
               builder: (context, controller) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (_keyAtributos.currentContext != null) {
-                    Scrollable.ensureVisible(_keyAtributos.currentContext!,
+                  final contexto = _keyAtributos.currentContext;
+                  if (contexto != null) {
+                    Scrollable.ensureVisible(contexto,
                         duration: const Duration(milliseconds: 300), alignment: 0.5);
                   }
                 });
@@ -131,7 +137,7 @@ class _TelaPerfilState extends State<TelaPerfil> {
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: isDark ? const Color(0xFF252536) : Colors.white,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: const BorderRadius.all(Radius.circular(16)),
                     border: Border.all(color: const Color(0xFF6B4EFF), width: 2),
                     boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
                   ),
@@ -157,8 +163,9 @@ class _TelaPerfilState extends State<TelaPerfil> {
               align: ContentAlign.top,
               builder: (context, controller) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (_keyInventario.currentContext != null) {
-                    Scrollable.ensureVisible(_keyInventario.currentContext!,
+                  final contexto = _keyInventario.currentContext;
+                  if (contexto != null) {
+                    Scrollable.ensureVisible(contexto,
                         duration: const Duration(milliseconds: 300), alignment: 0.5);
                   }
                 });
@@ -166,7 +173,7 @@ class _TelaPerfilState extends State<TelaPerfil> {
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: isDark ? const Color(0xFF252536) : Colors.white,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: const BorderRadius.all(Radius.circular(16)),
                     border: Border.all(color: const Color(0xFF6B4EFF), width: 2),
                     boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
                   ),
@@ -192,8 +199,9 @@ class _TelaPerfilState extends State<TelaPerfil> {
               align: ContentAlign.top,
               builder: (context, controller) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (_keyTitulos.currentContext != null) {
-                    Scrollable.ensureVisible(_keyTitulos.currentContext!,
+                  final contexto = _keyTitulos.currentContext;
+                  if (contexto != null) {
+                    Scrollable.ensureVisible(contexto,
                         duration: const Duration(milliseconds: 300), alignment: 0.5);
                   }
                 });
@@ -201,7 +209,7 @@ class _TelaPerfilState extends State<TelaPerfil> {
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: isDark ? const Color(0xFF252536) : Colors.white,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: const BorderRadius.all(Radius.circular(16)),
                     border: Border.all(color: const Color(0xFF6B4EFF), width: 2),
                     boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
                   ),
@@ -235,36 +243,39 @@ class _TelaPerfilState extends State<TelaPerfil> {
 
   Future<void> _fetchPerfil() async {
     try {
-      // Acessando o método através da instância Singleton
-      final perfilData = await PerfilService.instance.buscarPerfil();
+      // Chamada usando o método estático conforme o padrão de serviços
+      final perfilData = await PerfilService.buscarPerfil();
       
-      if (mounted) {
-        setState(() {
-          _nivelUsuario = perfilData['nivel'];
-          _xpUsuario = perfilData['xp'];
-          _tituloEquipadoId = perfilData['tituloEquipadoId'];
-          _itemEquipadoId = perfilData['itemEquipadoId'];
-          _nomeUsuario = perfilData['nomeUsuario'];
-          
-          final estatisticas = perfilData['estatisticas'];
-          _focoSt = estatisticas['foco'];
-          _discSt = estatisticas['disciplina'];
-          _intSt = estatisticas['intelecto'];
-          _forSt = estatisticas['forca'];
-          _conSt = estatisticas['consistencia'];
+      if (!mounted) return;
+      
+      setState(() {
+        _tituloEquipadoId = perfilData['tituloEquipadoId'];
+        _itemEquipadoId = perfilData['itemEquipadoId'];
+        _nomeUsuario = perfilData['nomeUsuario'];
+        _emailUsuario = perfilData['emailUsuario'] ?? '';
+        
+        final estatisticas = perfilData['estatisticas'];
+        _focoSt = estatisticas['foco'];
+        _discSt = estatisticas['disciplina'];
+        _intSt = estatisticas['intelecto'];
+        _forSt = estatisticas['forca'];
+        _conSt = estatisticas['consistencia'];
 
-          List<dynamic> desbloqueados = perfilData['itensDesbloqueados'];
-          for (var item in _inventario) {
-            item['desbloqueado'] = desbloqueados.contains(item['id']);
-          }
+        // Fallback de segurança vazio caso a API retorne null no primeiro login
+        List<dynamic> desbloqueados = perfilData['itensDesbloqueados'] ?? [];
+        for (var item in _inventario) {
+          item['desbloqueado'] = desbloqueados.contains(item['id']);
+        }
 
-          _conquistasRecentes = perfilData['conquistasRecentes'];
-          _isLoading = false;
-        });
-      }
+        _conquistasRecentes = perfilData['conquistasRecentes'];
+        _isLoading = false;
+      });
+      xpNotifier.value = perfilData['xp'] ?? 0;
+      nivelNotifier.value = perfilData['nivel'] ?? 1;
     } catch (e) {
       debugPrint('Erro ao buscar perfil na Tela: $e');
-      if (mounted) setState(() {
+      if (!mounted) return;
+      setState(() {
         _isLoading = false;
       });
     }
@@ -274,10 +285,10 @@ class _TelaPerfilState extends State<TelaPerfil> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
         return AlertDialog(
           backgroundColor: isDark ? const Color(0xFF1E1E2A) : Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
           title: Row(
             children: [
               const Icon(Icons.exit_to_app, color: Colors.redAccent),
@@ -291,20 +302,21 @@ class _TelaPerfilState extends State<TelaPerfil> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(dialogContext).pop(),
               child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
             ),
             ElevatedButton(
               onPressed: () async {
-                Navigator.of(context).pop(); // Fecha o dialog
+                Navigator.of(dialogContext).pop(); // Fecha o dialog usando o contexto do dialog
                 await AuthService.logout(); // Limpa os dados de sessão
-                if (mounted) {
-                  // Remove todas as rotas anteriores e envia para o Login
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (context) => const TelaLogin()),
-                    (route) => false,
-                  );
-                }
+                
+                if (!context.mounted) return; // Verifica o contexto passado na função, e não o Estado
+                
+                // Remove todas as rotas anteriores e envia para o Login
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const TelaLogin()),
+                  (route) => false,
+                );
               },
               style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
               child: const Text('Sair', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
@@ -317,8 +329,12 @@ class _TelaPerfilState extends State<TelaPerfil> {
 
   @override
   Widget build(BuildContext context) {
-    // Pega o nome do título equipado
-    String nomeTituloEquipado = _titulos.firstWhere((t) => t['id'] == _tituloEquipadoId)['nome'];
+    // Pega o título equipado com tratamento de erro e tipagem segura
+    final Map<String, dynamic> tituloEncontrado = _titulos.firstWhere(
+      (t) => t['id'] == _tituloEquipadoId,
+      orElse: () => _titulos.first,
+    );
+    String nomeTituloEquipado = tituloEncontrado['nome'] as String;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final corCard = isDark ? const Color(0xFF1E1E2A) : Colors.white;
@@ -357,6 +373,18 @@ class _TelaPerfilState extends State<TelaPerfil> {
                   Row(
                     children: [
                       IconButton(
+                        icon: Icon(Icons.edit_outlined, color: corTextoPrincipal),
+                        onPressed: () async {
+                          final atualizou = await Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => TelaEditarPerfil(nomeAtual: _nomeUsuario, emailAtual: _emailUsuario)),
+                          );
+                          if (!mounted) return;
+                          if (atualizou == true) _fetchPerfil();
+                        },
+                        tooltip: 'Editar Perfil',
+                      ),
+                      IconButton(
                         icon: Icon(Icons.help_outline, color: isDark ? Colors.blueAccent : Colors.blue),
                         onPressed: () => _showPerfilTutorial(context),
                         tooltip: 'Ver Tutorial',
@@ -378,7 +406,7 @@ class _TelaPerfilState extends State<TelaPerfil> {
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: corCard,
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: const BorderRadius.all(Radius.circular(24)),
                   border: Border.all(color: corBorda, width: 2),
                 ),
                 child: Row(
@@ -392,7 +420,7 @@ class _TelaPerfilState extends State<TelaPerfil> {
                         border: Border.all(color: const Color(0xFF6B4EFF), width: 3),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF6B4EFF).withOpacity(0.3),
+                        color: const Color(0xFF6B4EFF).withValues(alpha: 0.3),
                             blurRadius: 10,
                             spreadRadius: 2,
                           ),
@@ -437,25 +465,32 @@ class _TelaPerfilState extends State<TelaPerfil> {
                           ),
                           const SizedBox(height: 12),
                           // Barra de XP
-                          Row(
+                      AnimatedBuilder(
+                        animation: Listenable.merge([xpNotifier, nivelNotifier]),
+                        builder: (context, _) {
+                          final int nvl = nivelNotifier.value;
+                          final int xp = xpNotifier.value;
+                          return Row(
                             children: [
-                              Text('Nvl $_nivelUsuario', style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
+                              Text('Nvl $nvl', style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(4),
+                                  borderRadius: const BorderRadius.all(Radius.circular(4)),
                                   child: LinearProgressIndicator(
-                              value: (_xpUsuario % 100) / 100, // Calcula % barra de xp
-                                  backgroundColor: isDark ? const Color(0xFF13131A) : Colors.grey.shade200,
+                                    value: (xp % 100) / 100, // Calcula % barra de xp
+                                    backgroundColor: isDark ? const Color(0xFF13131A) : Colors.grey.shade200,
                                     color: Colors.amber,
                                     minHeight: 8,
                                   ),
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              Text('Nvl ${_nivelUsuario + 1}', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                              Text('Nvl ${nvl + 1}', style: const TextStyle(color: Colors.grey, fontSize: 12)),
                             ],
-                          ),
+                          );
+                        },
+                      ),
                         ],
                       ),
                     ),
@@ -492,7 +527,7 @@ class _TelaPerfilState extends State<TelaPerfil> {
                         _buildEstatistica(icone: Icons.loop, cor: Colors.redAccent, titulo: 'Consistência', valor: _conSt, isDark: isDark),
                         const SizedBox(width: 12),
                         // Dummy widget para manter a proporção da largura dos cards
-                        Expanded(child: const SizedBox.shrink()),
+                        const Expanded(child: SizedBox.shrink()), // const movido para englobar o Widget inteiro
                       ],
                     ),
                   ],
@@ -532,6 +567,17 @@ class _TelaPerfilState extends State<TelaPerfil> {
                           setState(() {
                             _itemEquipadoId = item['id'];
                           });
+                          // Salva a alteração na API no Back-ground
+                          InventarioService.equiparItem(item['id']).catchError((e) {
+                            debugPrint('Erro ao equipar item no perfil: $e');
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Item equipado com sucesso!'),
+                              backgroundColor: Color(0xFF4ADE80),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
                         } else {
                           // Feedback caso o item esteja bloqueado
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -549,9 +595,9 @@ class _TelaPerfilState extends State<TelaPerfil> {
                         margin: const EdgeInsets.only(right: 12),
                         decoration: BoxDecoration(
                           color: isEquipado 
-                              ? const Color(0xFF6B4EFF).withOpacity(0.2) 
+                          ? const Color(0xFF6B4EFF).withValues(alpha: 0.2) 
                           : corCard,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: const BorderRadius.all(Radius.circular(16)),
                           border: Border.all(
                         color: isEquipado ? const Color(0xFF6B4EFF) : corBorda,
                             width: 2,
@@ -564,7 +610,7 @@ class _TelaPerfilState extends State<TelaPerfil> {
                               isDesbloqueado ? item['icone'] : Icons.lock,
                               color: isDesbloqueado 
                                 ? (isEquipado ? const Color(0xFF6B4EFF) : corTextoPrincipal)
-                                  : Colors.grey.withOpacity(0.5),
+                            : Colors.grey.withValues(alpha: 0.5),
                               size: 32,
                             ),
                             const SizedBox(height: 8),
@@ -574,7 +620,7 @@ class _TelaPerfilState extends State<TelaPerfil> {
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: isEquipado ? FontWeight.bold : FontWeight.normal,
-                              color: isDesbloqueado ? corTextoPrincipal : Colors.grey.withOpacity(0.5),
+                        color: isDesbloqueado ? corTextoPrincipal : Colors.grey.withValues(alpha: 0.5),
                               ),
                             ),
                             if (isEquipado)
@@ -605,7 +651,7 @@ class _TelaPerfilState extends State<TelaPerfil> {
                   itemCount: _titulos.length,
                   itemBuilder: (context, index) {
                     final tituloItem = _titulos[index];
-                    bool isDesbloqueado = _nivelUsuario >= tituloItem['nivelMinimo'];
+                bool isDesbloqueado = nivelNotifier.value >= tituloItem['nivelMinimo'];
                     bool isEquipado = tituloItem['id'] == _tituloEquipadoId;
 
                     return GestureDetector(
@@ -614,6 +660,17 @@ class _TelaPerfilState extends State<TelaPerfil> {
                           setState(() {
                             _tituloEquipadoId = tituloItem['id'];
                           });
+                          // Salva a alteração na API no Back-ground
+                          InventarioService.equiparTitulo(tituloItem['id']).catchError((e) {
+                            debugPrint('Erro ao equipar título no perfil: $e');
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Título equipado com sucesso!'),
+                              backgroundColor: Color(0xFF4ADE80),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
@@ -630,9 +687,9 @@ class _TelaPerfilState extends State<TelaPerfil> {
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
                           color: isEquipado
-                              ? const Color(0xFF6B4EFF).withOpacity(0.2)
+                          ? const Color(0xFF6B4EFF).withValues(alpha: 0.2)
                           : corCard,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: const BorderRadius.all(Radius.circular(12)),
                           border: Border.all(
                         color: isEquipado ? const Color(0xFF6B4EFF) : corBorda,
                             width: 2,
@@ -650,7 +707,7 @@ class _TelaPerfilState extends State<TelaPerfil> {
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: isEquipado ? FontWeight.bold : FontWeight.normal,
-                            color: isDesbloqueado ? corTextoPrincipal : Colors.grey.withOpacity(0.5),
+                      color: isDesbloqueado ? corTextoPrincipal : Colors.grey.withValues(alpha: 0.5),
                               ),
                             ),
                           ],
@@ -680,7 +737,8 @@ class _TelaPerfilState extends State<TelaPerfil> {
                   
                   // Formata caso a data retorne no formato ISO do banco (ex: 2024-10-25T14:30:00Z)
                   if (dataStr.length >= 10 && dataStr.contains('T')) {
-                    DateTime dt = DateTime.tryParse(dataStr) ?? DateTime.now();
+                    // toLocal() garante que se a API devolver a data de Londres (UTC), ela seja convertida para a hora do celular do usuário
+                    DateTime dt = DateTime.tryParse(dataStr)?.toLocal() ?? DateTime.now();
                     dataStr = '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')} às ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
                   }
 
@@ -692,7 +750,7 @@ class _TelaPerfilState extends State<TelaPerfil> {
                     xp: xp,
                     isDark: isDark,
                   );
-                }).toList(),
+                }),
               const SizedBox(height: 24),
             ],
           ),
@@ -708,7 +766,7 @@ class _TelaPerfilState extends State<TelaPerfil> {
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF1E1E2A) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
+                borderRadius: const BorderRadius.all(Radius.circular(16)),
           border: Border.all(color: isDark ? const Color(0xFF252536) : Colors.grey.shade300),
         ),
         child: Column(
@@ -741,7 +799,7 @@ class _TelaPerfilState extends State<TelaPerfil> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E1E2A) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
+                borderRadius: const BorderRadius.all(Radius.circular(16)),
         border: Border.all(color: isDark ? const Color(0xFF252536) : Colors.grey.shade300),
       ),
       child: Row(
@@ -749,7 +807,7 @@ class _TelaPerfilState extends State<TelaPerfil> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFF4ADE80).withOpacity(0.2),
+              color: const Color(0xFF4ADE80).withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.check, color: Color(0xFF4ADE80), size: 20),

@@ -1,37 +1,11 @@
 import 'dart:convert';
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PerfilService {
-  // ============================================================================
-  // 🌟 INÍCIO DO PADRÃO SINGLETON (SINGLETON PATTERN) 🌟
-  // Este padrão garante que apenas UMA instância desta classe exista na memória
-  // durante toda a execução do aplicativo, economizando recursos e centralizando
-  // o acesso aos dados.
-  // ============================================================================
-  
-  // 1. Instância Privada Estática: A única que existirá no app.
-  static final PerfilService _instancia = PerfilService._construtorPrivado();
+  static String get baseUrl => 'https://api-autenticacao-production.up.railway.app';
 
-  // 2. Construtor Privado: Impede que usem "PerfilService()" em outras telas.
-  PerfilService._construtorPrivado();
-
-  // 3. Ponto de Acesso Global (Getter): Como as outras telas acessam o serviço.
-  static PerfilService get instance => _instancia;
-  
-  // ============================================================================
-  // 🛑 FIM DO PADRÃO SINGLETON 🛑
-  // ============================================================================
-
-  String get baseUrl {
-    String url = 'https://api-autenticacao-production.up.railway.app';
-    return url;
-  }
-
-  // Removido o 'static', pois agora usamos a instância do Singleton para chamar o método
-  Future<Map<String, dynamic>> buscarPerfil() async {
+  static Future<Map<String, dynamic>> buscarPerfil() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('jwt_token') ?? '';
@@ -51,6 +25,13 @@ class PerfilService {
         String nomeUsuario = savedName ?? 'Herói';
         if (data['user'] != null && data['user']['name'] != null) {
           nomeUsuario = data['user']['name'];
+        }
+        
+        String emailUsuario = '';
+        if (data['user'] != null && data['user']['email'] != null) {
+          emailUsuario = data['user']['email'];
+        } else if (data['email'] != null) {
+          emailUsuario = data['email'];
         }
 
         Map<String, String> estatisticasMap = {
@@ -74,12 +55,47 @@ class PerfilService {
           'tituloEquipadoId': data['tituloEquipadoId'] ?? 1,
           'itemEquipadoId': data['itemEquipadoId'] ?? 1,
           'nomeUsuario': nomeUsuario,
+          'emailUsuario': emailUsuario,
           'estatisticas': estatisticasMap,
           'itensDesbloqueados': data['itensDesbloqueados'] ?? [],
           'conquistasRecentes': conquistasRecentes,
         };
       } else {
         throw Exception('Falha ao buscar perfil: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  static Future<void> atualizarPerfil({String? nome, String? email, String? senha}) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('jwt_token') ?? '';
+      final userId = prefs.getString('user_id') ?? '';
+
+      Map<String, dynamic> body = {};
+      if (nome != null && nome.isNotEmpty) body['name'] = nome;
+      if (email != null && email.isNotEmpty) body['email'] = email;
+      if (senha != null && senha.isNotEmpty) body['password'] = senha;
+
+      final response = await http.put(
+        // Substituindo o /me pela rota com o ID. 
+        // Se o seu back-end estiver em inglês, troque 'usuarios' por 'users'
+        Uri.parse('$baseUrl/usuarios/$userId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        if (nome != null && nome.isNotEmpty) {
+          await prefs.setString('user_name', nome);
+        }
+      } else {
+        throw Exception('Falha ao atualizar perfil: ${response.statusCode}');
       }
     } catch (e) {
       rethrow;

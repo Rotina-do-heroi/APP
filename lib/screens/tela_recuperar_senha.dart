@@ -280,7 +280,7 @@ class _TelaRecuperarSenhaState extends State<TelaRecuperarSenha> {
           color: const Color(0xFF6B4EFF),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
-            BoxShadow(color: const Color(0xFF6B4EFF).withOpacity(0.4), blurRadius: 12, spreadRadius: 2),
+            BoxShadow(color: const Color(0xFF6B4EFF).withValues(alpha: 0.4), blurRadius: 12, spreadRadius: 2),
           ],
         ),
         child: _isLoading

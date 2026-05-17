@@ -19,6 +19,10 @@ final GlobalKey keyPerfil = GlobalKey();
 final GlobalKey keyNovaMissao = GlobalKey();
 final GlobalKey keyNavBar = GlobalKey();
 
+// Notifiers globais para o Sistema de XP e Nível
+final ValueNotifier<int> xpNotifier = ValueNotifier(0);
+final ValueNotifier<int> nivelNotifier = ValueNotifier(1);
+
 // Função global para exibir o tutorial a partir de qualquer tela
 void showAppTutorial(BuildContext context) {
   TutorialCoachMark(
@@ -127,6 +131,68 @@ void showAppTutorial(BuildContext context) {
   ).show(context: context);
 }
 
+// Sistema de XP Global - Sincroniza e checa Level Up
+Future<void> sincronizarProgresso(BuildContext context) async {
+  try {
+    final data = await PerfilService.buscarPerfil();
+    final int xpServidor = data['xp'] ?? 0;
+    final int nivelServidor = data['nivel'] ?? 1;
+
+    // Se o nível recebido for maior que o atual (e não for o carregamento inicial)
+    if (nivelNotifier.value > 0 && nivelServidor > nivelNotifier.value) {
+      if (context.mounted) {
+        mostrarDialogoLevelUp(context, nivelServidor);
+      }
+    }
+
+    xpNotifier.value = xpServidor;
+    nivelNotifier.value = nivelServidor;
+  } catch (e) {
+    debugPrint('Erro ao sincronizar progresso: $e');
+  }
+}
+
+void mostrarDialogoLevelUp(BuildContext context, int novoNivel) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  showDialog(
+    context: context,
+    builder: (context) {
+      return Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        backgroundColor: isDark ? const Color(0xFF1E1E2A) : Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.arrow_upward_rounded, color: Colors.amber, size: 80),
+              const SizedBox(height: 16),
+              const Text('LEVEL UP!', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.amber, letterSpacing: 2)),
+              const SizedBox(height: 8),
+              Text('Você alcançou o Nível $novoNivel', style: TextStyle(fontSize: 18, color: isDark ? Colors.white : Colors.black87)),
+              const SizedBox(height: 16),
+              const Text('Novos títulos podem estar disponíveis no seu Inventário.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6B4EFF), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                child: const Text('Incrível!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              )
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+// Função para verificar se o usuário já tem um token salvo
+Future<bool> verificarLoginAtivo() async {
+  final prefs = await SharedPreferences.getInstance();
+  final token = prefs.getString('jwt_token');
+  return token != null && token.isNotEmpty;
+}
+
 void main() {
   runApp(const AppRotina());
 }
@@ -165,7 +231,23 @@ class AppRotina extends StatelessWidget {
               unselectedItemColor: Colors.grey,
             ),
           ),
-          home: const TelaLogin(),
+        home: FutureBuilder<bool>(
+          future: verificarLoginAtivo(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Scaffold(
+                backgroundColor: modoAtual == ThemeMode.dark ? const Color(0xFF1A1A24) : const Color(0xFFF3F4F6),
+                body: const Center(
+                  child: CircularProgressIndicator(color: Color(0xFF6B4EFF)),
+                ),
+              );
+            }
+            if (snapshot.hasData && snapshot.data == true) {
+              return const TelaPrincipal();
+            }
+            return const TelaLogin();
+          },
+        ),
         );
       },
     );
@@ -217,7 +299,7 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
     if (primeiroAcesso) {
       // NOVO: Verifica se o usuário é um "Veterano" (tem conta antiga mas instalou o app agora)
       try {
-        final perfil = await PerfilService.instance.buscarPerfil();
+        final perfil = await PerfilService.buscarPerfil();
         final int nivel = perfil['nivel'] ?? 1;
         final int xp = perfil['xp'] ?? 0;
         final List conquistas = perfil['conquistasRecentes'] ?? [];

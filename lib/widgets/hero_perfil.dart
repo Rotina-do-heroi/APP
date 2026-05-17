@@ -13,8 +13,6 @@ class HeroPerfil extends StatefulWidget {
 
 class _HeroPerfilState extends State<HeroPerfil> {
   String _nome = "Herói";
-  int _nivelAtual = 1;
-  int _xpAtual = 0;
   int _itemEquipadoId = 1;
 
   // Mapeia o ID do item equipado para o ícone correspondente
@@ -36,19 +34,16 @@ class _HeroPerfilState extends State<HeroPerfil> {
   }
 
   Future<void> _fetchDadosPerfil() async {
-    const String baseUrl = 'https://api-autenticacao-production.up.railway.app';
-
     try {
-      // Acessando a API de Perfil estritamente através do Singleton
-      final data = await PerfilService.instance.buscarPerfil();
-      if (mounted) {
-        setState(() {
-          _nivelAtual = data['nivel'] ?? 1;
-          _xpAtual = data['xp'] ?? 0;
-          _itemEquipadoId = data['itemEquipadoId'] ?? 1;
-          _nome = data['nomeUsuario'] ?? 'Herói';
-        });
-      }
+      // Acessando a API de Perfil
+      final data = await PerfilService.buscarPerfil();
+      if (!mounted) return;
+      setState(() {
+        _itemEquipadoId = data['itemEquipadoId'] ?? 1;
+        _nome = data['nomeUsuario'] ?? 'Herói';
+      });
+      xpNotifier.value = data['xp'] ?? 0;
+      nivelNotifier.value = data['nivel'] ?? 1;
     } catch (e) {
       debugPrint('Erro ao buscar perfil no Hero: $e');
     }
@@ -56,23 +51,25 @@ class _HeroPerfilState extends State<HeroPerfil> {
 
   @override
   Widget build(BuildContext context) {
-    // Cálculos reais vindos da API
-    final int nivelProximo = _nivelAtual + 1;
-    final int xpNaBarra = _xpAtual % 100;
-    final int xpTotalDoNivel = 100;
-    
-    // Calcula a porcentagem da barra
-    final double progressoXp = xpNaBarra / xpTotalDoNivel;
-
     // Variáveis de adaptação para o Tema
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final Color corTexto = isDark ? Colors.white : Colors.black87;
     final Color corFundoAvatar = isDark ? const Color(0xFF1E1E2A) : Colors.white;
     final Color corBordaAvatar = isDark ? const Color(0xFF2E2E40) : Colors.grey.shade300;
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
+    return AnimatedBuilder(
+      animation: Listenable.merge([xpNotifier, nivelNotifier]),
+      builder: (context, _) {
+        final int nivelAtual = nivelNotifier.value;
+        final int xpAtual = xpNotifier.value;
+        final int nivelProximo = nivelAtual + 1;
+        final int xpNaBarra = xpAtual % 100;
+        final int xpTotalDoNivel = 100;
+        final double progressoXp = xpNaBarra / xpTotalDoNivel;
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
         // 1. Avatar com Badge de Nível (usando Stack para sobreposição)
         Stack(
           clipBehavior: Clip.none,
@@ -114,7 +111,7 @@ class _HeroPerfilState extends State<HeroPerfil> {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  '$_nivelAtual',
+                    '$nivelAtual',
                   style: const TextStyle(
                     color: Colors.black,
                     fontWeight: FontWeight.w900,
@@ -136,15 +133,19 @@ class _HeroPerfilState extends State<HeroPerfil> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    _nome,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: corTexto,
-                      fontFamily: 'monospace', // Fonte retrô
+                  Flexible(
+                    child: Text(
+                      _nome,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: corTexto,
+                        fontFamily: 'monospace', // Fonte retrô
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  const SizedBox(width: 8),
                   Row(
                     children: [
                       const Icon(Icons.bolt, color: Color(0xFFFFB800), size: 16),
@@ -198,7 +199,7 @@ class _HeroPerfilState extends State<HeroPerfil> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Nível $_nivelAtual',
+                  'Nível $nivelAtual',
                     style: const TextStyle(color: Colors.grey, fontSize: 12),
                   ),
                   Text(
@@ -256,6 +257,8 @@ class _HeroPerfilState extends State<HeroPerfil> {
           ],
         ),
       ],
+    );
+      },
     );
   }
 

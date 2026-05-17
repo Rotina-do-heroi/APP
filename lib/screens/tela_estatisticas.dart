@@ -41,7 +41,8 @@ class _TelaEstatisticasState extends State<TelaEstatisticas> {
 
     if (primeiroAcesso) {
       Future.delayed(const Duration(milliseconds: 800), () {
-        if (mounted) _showEstatisticasTutorial(context);
+        if (!mounted) return;
+        _showEstatisticasTutorial(context);
       });
       // Salva que o usuário já viu o tutorial dessa tela
       await prefs.setBool(chaveTutorial, false);
@@ -60,8 +61,9 @@ class _TelaEstatisticasState extends State<TelaEstatisticas> {
               align: ContentAlign.bottom,
               builder: (context, controller) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (_keyGrafico.currentContext != null) {
-                    Scrollable.ensureVisible(_keyGrafico.currentContext!,
+                  final contexto = _keyGrafico.currentContext;
+                  if (contexto != null) {
+                    Scrollable.ensureVisible(contexto,
                         duration: const Duration(milliseconds: 300), alignment: 0.5);
                   }
                 });
@@ -95,8 +97,9 @@ class _TelaEstatisticasState extends State<TelaEstatisticas> {
               align: ContentAlign.top,
               builder: (context, controller) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (_keyHabilidades.currentContext != null) {
-                    Scrollable.ensureVisible(_keyHabilidades.currentContext!,
+                  final contexto = _keyHabilidades.currentContext;
+                  if (contexto != null) {
+                    Scrollable.ensureVisible(contexto,
                         duration: const Duration(milliseconds: 300), alignment: 0.5);
                   }
                 });
@@ -138,25 +141,25 @@ class _TelaEstatisticasState extends State<TelaEstatisticas> {
 
   Future<void> _fetchEstatisticas() async {
     try {
-      // Acessando a API de Estatísticas estritamente através do Singleton
-      final estatisticas = await EstatisticasService.instance.buscarEstatisticas();
-      if (mounted) {
-        setState(() {
-          focValue = estatisticas['foco'] ?? 0;
-          disValue = estatisticas['disciplina'] ?? 0;
-          intValue = estatisticas['intelecto'] ?? 0;
-          forValue = estatisticas['forca'] ?? 0;
-          conValue = estatisticas['consistencia'] ?? 0;
-          _isLoading = false;
-        });
-      }
+      // Acessando a API de Estatísticas pelo método estático
+      final estatisticas = await EstatisticasService.buscarEstatisticas();
+      
+      if (!mounted) return;
+      
+      setState(() {
+        focValue = estatisticas['foco'] ?? 0;
+        disValue = estatisticas['disciplina'] ?? 0;
+        intValue = estatisticas['intelecto'] ?? 0;
+        forValue = estatisticas['forca'] ?? 0;
+        conValue = estatisticas['consistencia'] ?? 0;
+        _isLoading = false;
+      });
     } catch (e) {
       debugPrint('Erro ao buscar estatísticas: $e');
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -334,7 +337,7 @@ class _TelaEstatisticasState extends State<TelaEstatisticas> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: cor.withOpacity(0.2),
+                  color: cor.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(icone, color: cor, size: 24),
@@ -365,7 +368,7 @@ class _TelaEstatisticasState extends State<TelaEstatisticas> {
             decoration: BoxDecoration(
             color: isDark ? const Color(0xFF13131A) : Colors.grey.shade50,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: cor.withOpacity(0.3)),
+              border: Border.all(color: cor.withValues(alpha: 0.3)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -426,7 +429,7 @@ class RadarChartPainter extends CustomPainter {
       ..strokeWidth = 1.0;
 
     final Paint paintPoligono = Paint()
-      ..color = corPrimaria.withOpacity(0.4)
+      ..color = corPrimaria.withValues(alpha: 0.4)
       ..style = PaintingStyle.fill;
 
     final Paint paintBordaPoligono = Paint()

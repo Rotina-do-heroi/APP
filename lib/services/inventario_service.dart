@@ -1,16 +1,10 @@
 import 'dart:convert';
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class InventarioService {
   // Define a URL base dinamicamente, mantendo a regra de plataformas
-  static String get baseUrl {
-    String url = 'http://localhost:3000';
-
-    return url;
-  }
+  static String get baseUrl => 'https://api-autenticacao-production.up.railway.app';
 
   static Future<Map<String, dynamic>> buscarInventario() async {
     try {

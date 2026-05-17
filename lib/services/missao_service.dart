@@ -60,10 +60,15 @@ class MissaoService {
     }
   }
 
-  static Future<void> atualizarProgressoMissao(String missaoId, int sessoesConcluidas, bool concluida) async {
+  static Future<void> atualizarProgressoMissao(String missaoId, int sessoesConcluidas, bool concluida, {List<String>? tags}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('jwt_token') ?? '';
+
+      String? atributoGanho;
+      if (concluida && tags != null && tags.isNotEmpty) {
+        atributoGanho = tags.first; // Ex: 'Intelecto', 'Força', etc.
+      }
 
       final response = await http.put(
         Uri.parse('$baseUrl/tarefas/$missaoId'),
@@ -74,6 +79,7 @@ class MissaoService {
         body: jsonEncode({
           'sessoesConcluidas': sessoesConcluidas,
           'concluida': concluida,
+          if (atributoGanho != null) 'atributoGanho': atributoGanho, // Envia o bônus para a API
         }),
       );
 
@@ -85,19 +91,23 @@ class MissaoService {
     }
   }
 
-  static Future<void> salvarSessaoHiperfoco(int duracaoMinutos) async {
+  static Future<void> salvarSessaoHiperfoco(int duracaoMinutos, {int xpBonus = 0}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('jwt_token') ?? '';
 
+      // Como o XP pertence ao Usuário, enviamos para a API de Autenticação!
+      const authApiUrl = 'https://api-autenticacao-production.up.railway.app';
+
       final response = await http.post(
-        Uri.parse('$baseUrl/hiperfoco/sessao'),
+        Uri.parse('$authApiUrl/hiperfoco/sessao'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
         body: jsonEncode({
           'duracaoMinutos': duracaoMinutos,
+          'xpBonus': xpBonus, // Adicionamos o envio do bônus de XP da ofensiva
         }),
       );
 

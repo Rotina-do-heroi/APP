@@ -1,10 +1,4 @@
-import 'dart:convert';
-import 'dart:io';
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 import '../services/inventario_service.dart';
 
 class TelaInventario extends StatefulWidget {
@@ -58,15 +52,7 @@ class _TelaInventarioState extends State<TelaInventario> {
     );
 
     try {
-      String baseUrl = 'https://api-geral-production.up.railway.app';
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('jwt_token') ?? '';
-      
-      await http.put(
-        Uri.parse('$baseUrl/inventario/titulo'), 
-        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
-        body: jsonEncode({'tituloEquipadoId': idTitulo}),
-      );
+      await InventarioService.equiparTitulo(idTitulo);
     } catch (e) {
       debugPrint('Erro ao salvar título no banco: $e');
     }
@@ -82,24 +68,25 @@ class _TelaInventarioState extends State<TelaInventario> {
 
     try {
       final data = await InventarioService.buscarInventario();
-      if (mounted) {
-        setState(() {
-          _itemEquipadoId = data['itemEquipadoId'] ?? 1;
-          _tituloEquipadoId = data['tituloEquipadoId'] ?? 1;
-          _nivelUsuario = data['nivel'] ?? 1;
+      if (!mounted) return;
+      
+      setState(() {
+        _itemEquipadoId = data['itemEquipadoId'] ?? 1;
+        _tituloEquipadoId = data['tituloEquipadoId'] ?? 1;
+        _nivelUsuario = data['nivel'] ?? 1;
 
-          if (data['itensDesbloqueados'] != null) {
-            List<dynamic> desbloqueados = data['itensDesbloqueados'];
-            for (var item in _inventario) {
-              item['desbloqueado'] = desbloqueados.contains(item['id']);
-            }
+        if (data['itensDesbloqueados'] != null) {
+          List<dynamic> desbloqueados = data['itensDesbloqueados'];
+          for (var item in _inventario) {
+            item['desbloqueado'] = desbloqueados.contains(item['id']);
           }
-          _isLoading = false;
-        });
-      }
+        }
+        _isLoading = false;
+      });
     } catch (e) {
       debugPrint('Erro ao buscar inventário: $e');
-      if (mounted) setState(() => _isLoading = false);
+      if (!mounted) return;
+      setState(() => _isLoading = false);
     }
   }
 
@@ -170,7 +157,7 @@ class _TelaInventarioState extends State<TelaInventario> {
                           child: ListTile(
                             leading: Icon(
                               isDesbloqueado ? item['icone'] : Icons.lock,
-                              color: isDesbloqueado ? (isEquipado ? const Color(0xFF6B4EFF) : Colors.amber) : Colors.grey.withOpacity(0.5),
+                              color: isDesbloqueado ? (isEquipado ? const Color(0xFF6B4EFF) : Colors.amber) : Colors.grey.withValues(alpha: 0.5),
                               size: 32,
                             ),
                             title: Text(
@@ -189,7 +176,7 @@ class _TelaInventarioState extends State<TelaInventario> {
                             trailing: isDesbloqueado && !isEquipado
                                 ? ElevatedButton(
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF6B4EFF).withOpacity(0.2),
+                                      backgroundColor: const Color(0xFF6B4EFF).withValues(alpha: 0.2),
                                       foregroundColor: const Color(0xFF6B4EFF),
                                       elevation: 0,
                                     ),
@@ -227,7 +214,7 @@ class _TelaInventarioState extends State<TelaInventario> {
                           child: ListTile(
                             leading: Icon(
                               isDesbloqueado ? Icons.military_tech : Icons.lock,
-                              color: isDesbloqueado ? (isEquipado ? const Color(0xFF6B4EFF) : Colors.amber) : Colors.grey.withOpacity(0.5),
+                              color: isDesbloqueado ? (isEquipado ? const Color(0xFF6B4EFF) : Colors.amber) : Colors.grey.withValues(alpha: 0.5),
                               size: 32,
                             ),
                             title: Text(
@@ -246,7 +233,7 @@ class _TelaInventarioState extends State<TelaInventario> {
                             trailing: isDesbloqueado && !isEquipado
                                 ? ElevatedButton(
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF6B4EFF).withOpacity(0.2),
+                                      backgroundColor: const Color(0xFF6B4EFF).withValues(alpha: 0.2),
                                       foregroundColor: const Color(0xFF6B4EFF),
                                       elevation: 0,
                                     ),
