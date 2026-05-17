@@ -6,6 +6,7 @@ import 'screens/tela_hiperfoco.dart';
 import 'screens/tela_login.dart';
 import 'screens/tela_perfil.dart';
 import 'screens/tela_estatisticas.dart';
+import 'services/perfil_service.dart';
 
 // Notifier global para controlar o tema em todo o app
 final ValueNotifier<ThemeMode> temaNotifier = ValueNotifier(ThemeMode.dark);
@@ -214,6 +215,33 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
     final bool primeiroAcesso = prefs.getBool(chaveTutorial) ?? true;
 
     if (primeiroAcesso) {
+      // NOVO: Verifica se o usuário é um "Veterano" (tem conta antiga mas instalou o app agora)
+      try {
+        final perfil = await PerfilService.instance.buscarPerfil();
+        final int nivel = perfil['nivel'] ?? 1;
+        final int xp = perfil['xp'] ?? 0;
+        final List conquistas = perfil['conquistasRecentes'] ?? [];
+        final String? dataCriacao = perfil['dataCriacao'];
+        
+        bool contaAntiga = false;
+        if (dataCriacao != null) {
+          final dataRegistro = DateTime.tryParse(dataCriacao) ?? DateTime.now();
+          contaAntiga = DateTime.now().difference(dataRegistro).inHours >= 1; // Se a conta tem mais de 1 hora
+        }
+
+        // Se ele já tem progresso ou a conta foi criada há mais de 1 hora, ele é veterano!
+        if (nivel > 1 || xp > 0 || conquistas.isNotEmpty || contaAntiga) {
+          await prefs.setBool(chaveTutorial, false);
+          await prefs.setBool('primeiro_acesso_hiperfoco_$userId', false);
+          await prefs.setBool('primeiro_acesso_estatisticas_$userId', false);
+          await prefs.setBool('primeiro_acesso_perfil_tela_$userId', false);
+          return; // Sai da função sem mostrar os balões
+        }
+      } catch (e) {
+        // Falha silenciosa na API, segue o fluxo normal e exibe o tutorial por precaução
+        debugPrint('Erro ao verificar veterano: $e');
+      }
+
       // Pequeno delay para garantir que a tela foi renderizada antes de exibir os balões
       Future.delayed(const Duration(milliseconds: 800), () {
         if (mounted) showAppTutorial(context);

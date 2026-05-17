@@ -73,6 +73,7 @@ class PerfilService {
         return {
           'nivel': data['nivel'] ?? 1,
           'xp': data['xp'] ?? 0,
+          'dataCriacao': data['createdAt'] ?? data['criadoEm'] ?? data['created_at'],
           'tituloEquipadoId': data['tituloEquipadoId'] ?? 1,
           'itemEquipadoId': data['itemEquipadoId'] ?? 1,
           'nomeUsuario': nomeUsuario,

@@ -48,7 +48,12 @@ class AuthService {
         String? userName = responseData['user']?['name'] ?? responseData['user']?['nome'] ?? responseData['usuario']?['nome'] ?? responseData['usuario']?['name'];
         if (userName != null) {
           await prefs.setString('user_name', userName);
-          await prefs.setString('user_id', responseData['user']?['id']?.toString() ?? '');
+        }
+
+        // Garante a captura do ID independente de como o backend formate o JSON da resposta
+        String? userId = responseData['user']?['id']?.toString() ?? responseData['usuario']?['id']?.toString() ?? responseData['id']?.toString();
+        if (userId != null) {
+          await prefs.setString('user_id', userId);
         }
       }
     } else {
