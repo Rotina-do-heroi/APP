@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import '../services/auth_service.dart';
 
 class TelaRecuperarSenha extends StatefulWidget {
   const TelaRecuperarSenha({super.key});
@@ -17,7 +16,6 @@ class _TelaRecuperarSenhaState extends State<TelaRecuperarSenha> {
   
   int _passoAtual = 0; // 0 = Email, 1 = Código, 2 = Nova Senha
   bool _isLoading = false;
-  final String _apiUrl = 'https://api-autenticacao-production.up.railway.app';
 
   @override
   void dispose() {
@@ -37,42 +35,22 @@ class _TelaRecuperarSenhaState extends State<TelaRecuperarSenha> {
     setState(() => _isLoading = true);
 
     try {
-      print('🔵 Enviando email para: ${_emailController.text}');
-      print('🔵 URL: $_apiUrl/forgot-password');
-      
-      final response = await http.post(
-        Uri.parse('$_apiUrl/forgot-password'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': _emailController.text}),
-      ).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          throw Exception('Timeout: Servidor não respondeu');
-        },
-      );
-
-      print('🟢 Status: ${response.statusCode}');
-      print('🟢 Body: ${response.body}');
+      final data = await AuthService.enviarEmailRecuperacao(_emailController.text.trim());
 
       if (!mounted) return;
 
-      final data = jsonDecode(response.body);
-
-      if (data['success'] == true) {
-        _showSnackBar('✅ Código enviado para seu email!', Colors.green);
-        // Se estiver em modo de desenvolvimento, mostrar o código
-        if (data['devMode'] == true) {
-          _showSnackBar('[DEV] Código: ${data['code']}', Colors.blue);
-        }
-        setState(() => _passoAtual = 1); // Passa para a interface do Código
-      } else {
-        _showSnackBar('❌ ${data['message'] ?? 'Erro ao enviar código'}', Colors.red);
+      _showSnackBar('✅ Código enviado para seu email!', Colors.green);
+      // Se estiver em modo de desenvolvimento, mostrar o código
+      if (data['devMode'] == true) {
+        _showSnackBar('[DEV] Código: ${data['code']}', Colors.blue);
       }
+      setState(() => _passoAtual = 1); // Passa para a interface do Código
     } catch (e) {
-      print('🔴 Erro: $e');
-      _showSnackBar('❌ Erro: $e', Colors.red);
+      if (!mounted) return;
+      final mensagemErro = e.toString().replaceAll('Exception: ', '');
+      _showSnackBar('❌ $mensagemErro', Colors.red);
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -96,34 +74,26 @@ class _TelaRecuperarSenhaState extends State<TelaRecuperarSenha> {
     setState(() => _isLoading = true);
 
     try {
-      final response = await http.post(
-        Uri.parse('$_apiUrl/reset-password'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': _emailController.text,
-          'code': _codeController.text,
-          'newPassword': _passwordController.text,
-        }),
+      await AuthService.redefinirSenha(
+        _emailController.text.trim(),
+        _codeController.text.trim(),
+        _passwordController.text,
       );
 
       if (!mounted) return;
 
-      final data = jsonDecode(response.body);
-
-      if (data['success']) {
-        _showSnackBar('Senha redefinida com sucesso!', Colors.green);
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) {
-            Navigator.pop(context);
-          }
-        });
-      } else {
-        _showSnackBar(data['error'] ?? 'Erro ao redefinir senha', Colors.red);
-      }
+      _showSnackBar('Senha redefinida com sucesso!', Colors.green);
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) {
+          Navigator.pop(context);
+        }
+      });
     } catch (e) {
-      _showSnackBar('Erro: $e', Colors.red);
+      if (!mounted) return;
+      final mensagemErro = e.toString().replaceAll('Exception: ', '');
+      _showSnackBar('Erro: $mensagemErro', Colors.red);
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 

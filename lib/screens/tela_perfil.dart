@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
+import '../services/perfil_service.dart';
+import '../services/auth_service.dart';
+import 'tela_login.dart';
 
 class TelaPerfil extends StatefulWidget {
   const TelaPerfil({super.key});
@@ -46,95 +46,273 @@ class _TelaPerfilState extends State<TelaPerfil> {
     {'id': 10, 'nome': 'Lenda da Consistência', 'nivelMinimo': 100},
   ];
 
+  // Chaves para o Tutorial
+  final GlobalKey _keyInfoBasica = GlobalKey();
+  final GlobalKey _keyAtributos = GlobalKey();
+  final GlobalKey _keyInventario = GlobalKey();
+  final GlobalKey _keyTitulos = GlobalKey();
+
   @override
   void initState() {
     super.initState();
     _fetchPerfil();
+    _verificarTutorial();
+  }
+
+  Future<void> _verificarTutorial() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('user_id') ?? '';
+    final chaveTutorial = 'primeiro_acesso_perfil_tela_$userId';
+    // Puxa se é o primeiro acesso na tela de Perfil
+    final bool primeiroAcesso = prefs.getBool(chaveTutorial) ?? true;
+
+    if (primeiroAcesso) {
+      Future.delayed(const Duration(milliseconds: 800), () {
+        if (mounted) _showPerfilTutorial(context);
+      });
+      // Salva que o usuário já viu o tutorial dessa tela
+      await prefs.setBool(chaveTutorial, false);
+    }
+  }
+
+  void _showPerfilTutorial(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    TutorialCoachMark(
+      targets: [
+        TargetFocus(
+          identify: "info_basica",
+          keyTarget: _keyInfoBasica,
+          contents: [
+            TargetContent(
+              align: ContentAlign.bottom,
+              builder: (context, controller) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (_keyInfoBasica.currentContext != null) {
+                    Scrollable.ensureVisible(_keyInfoBasica.currentContext!,
+                        duration: const Duration(milliseconds: 300), alignment: 0.5);
+                  }
+                });
+                return Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF252536) : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFF6B4EFF), width: 2),
+                    boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Status do Herói 🛡️", style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 22, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 10),
+                      Text("Aqui você vê seu nível atual, seu título e o progresso para alcançar o próximo nível!", style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 16)),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+        TargetFocus(
+          identify: "atributos",
+          keyTarget: _keyAtributos,
+          contents: [
+            TargetContent(
+              align: ContentAlign.bottom,
+              builder: (context, controller) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (_keyAtributos.currentContext != null) {
+                    Scrollable.ensureVisible(_keyAtributos.currentContext!,
+                        duration: const Duration(milliseconds: 300), alignment: 0.5);
+                  }
+                });
+                return Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF252536) : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFF6B4EFF), width: 2),
+                    boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Seus Atributos 📊", style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 22, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 10),
+                      Text("Veja quantos pontos de progresso você acumulou em cada habilidade com base no seu desempenho nas missões!", style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 16)),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+        TargetFocus(
+          identify: "inventario",
+          keyTarget: _keyInventario,
+          contents: [
+            TargetContent(
+              align: ContentAlign.top,
+              builder: (context, controller) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (_keyInventario.currentContext != null) {
+                    Scrollable.ensureVisible(_keyInventario.currentContext!,
+                        duration: const Duration(milliseconds: 300), alignment: 0.5);
+                  }
+                });
+                return Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF252536) : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFF6B4EFF), width: 2),
+                    boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Equipamentos 🎒", style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 22, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 10),
+                      Text("Complete missões para desbloquear e equipar novas armaduras.", style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 16)),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+        TargetFocus(
+          identify: "titulos",
+          keyTarget: _keyTitulos,
+          contents: [
+            TargetContent(
+              align: ContentAlign.top,
+              builder: (context, controller) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (_keyTitulos.currentContext != null) {
+                    Scrollable.ensureVisible(_keyTitulos.currentContext!,
+                        duration: const Duration(milliseconds: 300), alignment: 0.5);
+                  }
+                });
+                return Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF252536) : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFF6B4EFF), width: 2),
+                    boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Títulos de Glória 📜", style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 22, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 10),
+                      Text("Suba de nível para ganhar novos títulos e mostrar o quão focado você é!", style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 16)),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ],
+      colorShadow: Colors.black,
+      textSkip: "PULAR TUTORIAL",
+      textStyleSkip: const TextStyle(
+        color: Colors.white,
+        fontWeight: FontWeight.bold,
+        fontFamily: 'monospace',
+        letterSpacing: 1.5,
+      ),
+      paddingFocus: 10,
+      opacityShadow: 0.85,
+    ).show(context: context);
   }
 
   Future<void> _fetchPerfil() async {
-    String baseUrl = 'https://api-autenticacao-production.up.railway.app';
-    if (!kIsWeb && Platform.isAndroid) {
-      baseUrl = 'http://10.0.2.2:3000';
-    }
-
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('jwt_token') ?? '';
-      final savedName = prefs.getString('user_name');
-      _nomeUsuario = savedName ?? 'Herói';
-      // Resgata o nome salvo no login para evitar ficar sem nome em caso de erro da API
-      if (savedName != null && savedName.isNotEmpty && mounted) {
+      // Acessando o método através da instância Singleton
+      final perfilData = await PerfilService.instance.buscarPerfil();
+      
+      if (mounted) {
         setState(() {
-          _nomeUsuario = savedName;
-        });
-      }
+          _nivelUsuario = perfilData['nivel'];
+          _xpUsuario = perfilData['xp'];
+          _tituloEquipadoId = perfilData['tituloEquipadoId'];
+          _itemEquipadoId = perfilData['itemEquipadoId'];
+          _nomeUsuario = perfilData['nomeUsuario'];
+          
+          final estatisticas = perfilData['estatisticas'];
+          _focoSt = estatisticas['foco'];
+          _discSt = estatisticas['disciplina'];
+          _intSt = estatisticas['intelecto'];
+          _forSt = estatisticas['forca'];
+          _conSt = estatisticas['consistencia'];
 
-      final response = await http.get(
-        Uri.parse('$baseUrl/me'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
+          List<dynamic> desbloqueados = perfilData['itensDesbloqueados'];
+          for (var item in _inventario) {
+            item['desbloqueado'] = desbloqueados.contains(item['id']);
+          }
 
-      // --- DEBUG ---
-      debugPrint('=== DEBUG API PERFIL ===');
-      debugPrint('Token sendo enviado: $token');
-      debugPrint('Status Code recebido: ${response.statusCode}');
-      debugPrint('Corpo da resposta: ${response.body}');
-      // -------------
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (mounted) {
-          setState(() {
-            _nivelUsuario = data['nivel'] ?? 1;
-            _xpUsuario = data['xp'] ?? 0;
-            _tituloEquipadoId = data['tituloEquipadoId'] ?? 1;
-            _itemEquipadoId = data['itemEquipadoId'] ?? 1;
-            
-           if (data['user'] != null && data['user']['name'] != null) {
-              _nomeUsuario = data['user']['name'];
-            }
-            
-            if (data['estatisticas'] != null) {
-              _focoSt = data['estatisticas']['foco']?.toString() ?? '0';
-              _discSt = data['estatisticas']['disciplina']?.toString() ?? '0';
-              _intSt = data['estatisticas']['intelecto']?.toString() ?? '0';
-              _forSt = data['estatisticas']['forca']?.toString() ?? '0';
-              _conSt = data['estatisticas']['consistencia']?.toString() ?? '0';
-            }
-
-            if (data['itensDesbloqueados'] != null) {
-              List<dynamic> desbloqueados = data['itensDesbloqueados'];
-              for (var item in _inventario) {
-                item['desbloqueado'] = desbloqueados.contains(item['id']);
-              }
-            }
-
-            // Tenta pegar o histórico de tarefas usando possíveis chaves comuns de APIs
-            if (data['tarefasConcluidas'] != null) {
-              _conquistasRecentes = data['tarefasConcluidas'];
-            } else if (data['conquistasRecentes'] != null) {
-              _conquistasRecentes = data['conquistasRecentes'];
-            } else if (data['historico'] != null) {
-              _conquistasRecentes = data['historico'];
-            }
-
-            _isLoading = false;
-          });
-        }
-      } else {
-        if (mounted) setState(() {
+          _conquistasRecentes = perfilData['conquistasRecentes'];
           _isLoading = false;
         });
       }
     } catch (e) {
+      debugPrint('Erro ao buscar perfil na Tela: $e');
       if (mounted) setState(() {
         _isLoading = false;
       });
     }
+  }
+
+  void _confirmarLogout(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: isDark ? const Color(0xFF1E1E2A) : Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              const Icon(Icons.exit_to_app, color: Colors.redAccent),
+              const SizedBox(width: 8),
+              Text('Sair da Conta', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
+            ],
+          ),
+          content: Text(
+            'Tem certeza que deseja sair da conta atual?',
+            style: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.of(context).pop(); // Fecha o dialog
+                await AuthService.logout(); // Limpa os dados de sessão
+                if (mounted) {
+                  // Remove todas as rotas anteriores e envia para o Login
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (context) => const TelaLogin()),
+                    (route) => false,
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+              child: const Text('Sair', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -159,17 +337,36 @@ class _TelaPerfilState extends State<TelaPerfil> {
             children: [
               // Cabeçalho
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Icon(Icons.person_outline, color: corTextoPrincipal, size: 24),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Perfil do Herói',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: corTextoPrincipal,
-                      fontFamily: 'monospace',
-                    ),
+                  Row(
+                    children: [
+                      Icon(Icons.person_outline, color: corTextoPrincipal, size: 24),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Perfil do Herói',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: corTextoPrincipal,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.help_outline, color: isDark ? Colors.blueAccent : Colors.blue),
+                        onPressed: () => _showPerfilTutorial(context),
+                        tooltip: 'Ver Tutorial',
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.logout, color: Colors.redAccent),
+                        onPressed: () => _confirmarLogout(context),
+                        tooltip: 'Sair da Conta',
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -177,6 +374,7 @@ class _TelaPerfilState extends State<TelaPerfil> {
 
               // --- 1. CARTÃO DE INFORMAÇÕES BÁSICAS E AVATAR ---
               Container(
+                key: _keyInfoBasica,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: corCard,
@@ -267,30 +465,38 @@ class _TelaPerfilState extends State<TelaPerfil> {
               const SizedBox(height: 24),
 
               // --- 2. ESTATÍSTICAS DETALHADAS ---
-              const Text(
-                'Atributos',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-              _buildEstatistica(icone: Icons.my_location, cor: const Color(0xFF6B4EFF), titulo: 'Foco', valor: _focoSt, isDark: isDark),
-                  const SizedBox(width: 12),
-              _buildEstatistica(icone: Icons.assignment_turned_in, cor: Colors.orangeAccent, titulo: 'Disciplina', valor: _discSt, isDark: isDark),
-                  const SizedBox(width: 12),
-              _buildEstatistica(icone: Icons.psychology, cor: Colors.blueAccent, titulo: 'Intelecto', valor: _intSt, isDark: isDark),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-              _buildEstatistica(icone: Icons.fitness_center, cor: const Color(0xFF4ADE80), titulo: 'Força', valor: _forSt, isDark: isDark),
-                  const SizedBox(width: 12),
-              _buildEstatistica(icone: Icons.loop, cor: Colors.redAccent, titulo: 'Consistência', valor: _conSt, isDark: isDark),
-                  const SizedBox(width: 12),
-                  // Dummy widget para manter a proporção da largura dos cards
-                  Expanded(child: const SizedBox.shrink()),
-                ],
+              Container(
+                key: _keyAtributos,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Atributos',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        _buildEstatistica(icone: Icons.my_location, cor: const Color(0xFF6B4EFF), titulo: 'Foco', valor: _focoSt, isDark: isDark),
+                        const SizedBox(width: 12),
+                        _buildEstatistica(icone: Icons.assignment_turned_in, cor: Colors.orangeAccent, titulo: 'Disciplina', valor: _discSt, isDark: isDark),
+                        const SizedBox(width: 12),
+                        _buildEstatistica(icone: Icons.psychology, cor: Colors.blueAccent, titulo: 'Intelecto', valor: _intSt, isDark: isDark),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        _buildEstatistica(icone: Icons.fitness_center, cor: const Color(0xFF4ADE80), titulo: 'Força', valor: _forSt, isDark: isDark),
+                        const SizedBox(width: 12),
+                        _buildEstatistica(icone: Icons.loop, cor: Colors.redAccent, titulo: 'Consistência', valor: _conSt, isDark: isDark),
+                        const SizedBox(width: 12),
+                        // Dummy widget para manter a proporção da largura dos cards
+                        Expanded(child: const SizedBox.shrink()),
+                      ],
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 32),
 
@@ -310,6 +516,7 @@ class _TelaPerfilState extends State<TelaPerfil> {
               ),
               const SizedBox(height: 12),
               SizedBox(
+                key: _keyInventario,
                 height: 110,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
@@ -391,6 +598,7 @@ class _TelaPerfilState extends State<TelaPerfil> {
               ),
               const SizedBox(height: 12),
               SizedBox(
+                key: _keyTitulos,
                 height: 50,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,

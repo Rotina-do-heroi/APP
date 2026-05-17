@@ -3,17 +3,12 @@
 // ---------------------------------------------------
 // Arquivo: lib/screens/tela_inicial.dart
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/missao.dart';
 import '../widgets/hero_perfil.dart';
 import '../widgets/card_da_missao.dart';
 import '../widgets/mission_card.dart';
+import '../services/missao_service.dart';
 import '../main.dart'; // Importa as GlobalKeys do tutorial
-
-// Constante com a URL da API das missões
-const String apiMissoesUrl = 'https://api-geral-production.up.railway.app';
 
 // Notifier global para compartilhar o estado das missões com a TelaHiperfoco e outras
 final ValueNotifier<List<Missao>> missoesNotifier = ValueNotifier([]);
@@ -34,31 +29,10 @@ class _TelaInicialTarefasState extends State<TelaInicialTarefas> {
     // Atualiza o estado global e notifica quem estiver escutando
     missoesNotifier.value = List.from(missoesNotifier.value)..add(missao);
     
-    // Enviando os dados (incluindo as sessões) para o banco de dados via API
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('jwt_token') ?? '';
-      
-      final url = Uri.parse('$apiMissoesUrl/tarefas');
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({
-          'titulo': missao.titulo,
-          'descricao': missao.descricao,
-          'prioridade': missao.prioridade,
-          'sessoesNecessarias': missao.sessoesNecessarias,
-          'sessoesConcluidas': missao.sessoesConcluidas,
-        }),
-      );
-      
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final data = jsonDecode(response.body);
-        // Atualiza a missão local com o ID gerado pelo banco de dados
-        missao.id = data['id']?.toString() ?? data['tarefa']?['id']?.toString();
+      final novoId = await MissaoService.adicionarMissao(missao);
+      if (novoId != null) {
+        missao.id = novoId; // Atualiza a missão local com o ID gerado pelo banco
       }
     } catch (e) {
       debugPrint('Erro ao salvar na API: $e');
@@ -79,16 +53,7 @@ class _TelaInicialTarefasState extends State<TelaInicialTarefas> {
     // Deleta do banco de dados (API)
     if (missao.id != null) {
       try {
-        final prefs = await SharedPreferences.getInstance();
-        final token = prefs.getString('jwt_token') ?? '';
-        
-        await http.delete(
-          Uri.parse('$apiMissoesUrl/tarefas/${missao.id}'),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $token',
-          },
-        );
+        await MissaoService.deletarMissao(missao.id!);
       } catch (e) {
         debugPrint('Erro ao deletar na API: $e');
       }
@@ -153,6 +118,17 @@ class _TelaInicialTarefasState extends State<TelaInicialTarefas> {
                                     missoesNotifier.value = List.from(missoesNotifier.value);
                                   },
                                   onDeletarMissao: () => _deletarMissao(missao),
+                                  onFocoRapido: () {
+                                    if (missao.concluida) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Esta missão já foi concluída!'), backgroundColor: Colors.orange),
+                                      );
+                                      return;
+                                    }
+                                    missaoSelecionadaNotifier.value = missao;
+                                    autoStartTimerNotifier.value = true;
+                                    abaAtualNotifier.value = 1; // Navega para a aba de Foco
+                                  },
                                 ),
                               )
                               .toList(),

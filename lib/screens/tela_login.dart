@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 import '../main.dart'; // Para navegar até a TelaPrincipal após o login
 import 'tela_recuperar_senha.dart'; // Para navegar até a tela de recuperação de senha
+import '../services/auth_service.dart'; // Importa o novo serviço de autenticação
 
 class TelaLogin extends StatefulWidget {
   const TelaLogin({super.key});
@@ -37,76 +35,49 @@ class _TelaLoginState extends State<TelaLogin> {
       _isLoading = true;
     });
 
+<<<<<<< HEAD
     // Define a URL base para a API hospedada na nuvem
     const String baseUrl = 'https://api-autenticacao-production.up.railway.app';
 
     final url = Uri.parse(_isLogin ? '$baseUrl/login' : '$baseUrl/register');
     
+=======
+>>>>>>> 48df2747edbd3d03095df8335195f4006ae2ce28
     try {
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          // Os nomes aqui precisam ser EXATAMENTE iguais ao que o Node espera:
-          if (!_isLogin) 'name': _nomeController.text, 
-          'email': _emailController.text,
-          'password': _senhaController.text, 
-        }),
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        // Extrai e salva o Token JWT localmente
-        final responseData = jsonDecode(response.body);
-        final token = responseData['token'];
-        if (token != null) {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('jwt_token', token);
-
-          // Extrai e salva o Nome do usuário para uso offline/fallback
-          String? userName = responseData['user']?['name'];
-          if (userName == null && responseData['user'] != null) userName = responseData['user']['name'] ?? responseData['user']['nome'];
-          if (userName == null && responseData['usuario'] != null) userName = responseData['usuario']['nome'] ?? responseData['usuario']['name'];
-          if (userName != null) {
-            await prefs.setString('user_name', userName);
-           await prefs.setString('user_id', responseData['user']?['id'].toString() ?? '');
-          }
-        }
-
-        if (_isLogin) {
-          // Login com sucesso, vai para o app
-          if (mounted) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const TelaPrincipal()),
-            );
-          }
-        } else {
-          // Cadastro com sucesso, volta para o login para o usuário gerar seu token
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Herói criado com sucesso! Faça seu login.'), backgroundColor: Colors.green),
-            );
-            setState(() {
-              _isLogin = true; // Muda a visualização para Login
-              _senhaController.clear(); // Limpa a senha por segurança
-            });
-          }
-        }
-      } else {
-        // Tenta pegar a mensagem de erro específica do backend
-        final responseData = jsonDecode(response.body);
-        // Capta o erro corretamente, e se for erro 500 do Node.js, avisa na tela.
-        final errorMessage = responseData['error'] ?? responseData['message'] ?? 'Erro do Servidor. Código: ${response.statusCode}';
+      if (_isLogin) {
+        await AuthService.login(
+          _emailController.text.trim(),
+          _senhaController.text,
+        );
         
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(errorMessage), backgroundColor: Colors.redAccent),
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const TelaPrincipal()),
           );
+        }
+      } else {
+        await AuthService.register(
+          _nomeController.text.trim(),
+          _emailController.text.trim(),
+          _senhaController.text,
+        );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Herói criado com sucesso! Faça seu login.'), backgroundColor: Colors.green),
+          );
+          setState(() {
+            _isLogin = true; // Muda a visualização para Login
+            _senhaController.clear(); // Limpa a senha por segurança
+          });
         }
       }
     } catch (e) {
       if (mounted) {
+        // Remove o prefixo padrão da classe Exception antes de mostrar na tela
+        final mensagemErro = e.toString().replaceAll('Exception: ', '');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao conectar com a API: $e'), backgroundColor: Colors.redAccent),
+          SnackBar(content: Text(mensagemErro), backgroundColor: Colors.redAccent),
         );
       }
     } finally {

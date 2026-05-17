@@ -1,6 +1,6 @@
 {
-    "name": "app_rotina_mvp",
-    "short_name": "app_rotina_mvp",
+    "name": "Rotina do Herói",
+    "short_name": "Rotina do Herói",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

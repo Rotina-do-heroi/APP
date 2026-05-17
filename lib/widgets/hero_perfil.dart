@@ -1,11 +1,8 @@
 // Arquivo: lib/widgets/hero_perfil.dart
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 import '../main.dart'; // Importa o main.dart para acessar o temaNotifier
 import '../screens/tela_inventario.dart'; // Importa a nova tela de inventário
-import '../screens/tela_inicial.dart'; // Para acessar os Notifiers do foco
+import '../services/perfil_service.dart';
 
 class HeroPerfil extends StatefulWidget {
   const HeroPerfil({super.key});
@@ -39,45 +36,21 @@ class _HeroPerfilState extends State<HeroPerfil> {
   }
 
   Future<void> _fetchDadosPerfil() async {
+<<<<<<< HEAD
     const String baseUrl = 'https://api-autenticacao-production.up.railway.app';
 
+=======
+>>>>>>> 48df2747edbd3d03095df8335195f4006ae2ce28
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('jwt_token') ?? '';
-      final savedName = prefs.getString('user_name');
-
-      if (savedName != null && savedName.isNotEmpty && mounted) {
+      // Acessando a API de Perfil estritamente através do Singleton
+      final data = await PerfilService.instance.buscarPerfil();
+      if (mounted) {
         setState(() {
-          _nome = savedName;
+          _nivelAtual = data['nivel'] ?? 1;
+          _xpAtual = data['xp'] ?? 0;
+          _itemEquipadoId = data['itemEquipadoId'] ?? 1;
+          _nome = data['nomeUsuario'] ?? 'Herói';
         });
-      }
-
-      final response = await http.get(
-        Uri.parse('$baseUrl/me'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (mounted) {
-          setState(() {
-            _nivelAtual = data['nivel'] ?? 1;
-            _xpAtual = data['xp'] ?? 0;
-            _itemEquipadoId = data['itemEquipadoId'] ?? 1;
-            
-            // Extrai o nome de diversas formas que o back-end possa retornar
-            String? nomeApi = data['name'] ?? data['nome'];
-            if (nomeApi == null && data['user'] != null) nomeApi = data['user']['name'] ?? data['user']['nome'];
-            
-            if (nomeApi != null && nomeApi.isNotEmpty) {
-              _nome = nomeApi;
-              prefs.setString('user_name', nomeApi); // Salva o nome no cache para uso na próxima vez
-            }
-          });
-        }
       }
     } catch (e) {
       debugPrint('Erro ao buscar perfil no Hero: $e');
@@ -245,31 +218,6 @@ class _HeroPerfilState extends State<HeroPerfil> {
         // 3. Botões de Ação Laterais
         Row(
           children: [
-            _buildBotaoAcao(
-              icone: Icons.center_focus_strong,
-              corFundo: const Color(0xFFA855F7),
-              corIcone: Colors.white,
-              onTap: () {
-                // Pega apenas as missões que ainda não foram concluídas
-                final missoesPendentes = missoesNotifier.value.where((m) => !m.concluida).toList();
-
-                if (missoesPendentes.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Você não tem nenhuma missão pendente! 🏆'),
-                      backgroundColor: Colors.orange,
-                    ),
-                  );
-                  return;
-                }
-
-                // Seleciona a primeira missão pendente e ativa o auto-start
-                missaoSelecionadaNotifier.value = missoesPendentes.first;
-                autoStartTimerNotifier.value = true;
-                abaAtualNotifier.value = 1; // Navega automaticamente para a Tela de Foco!
-              },
-            ),
-            const SizedBox(width: 8),
             _buildBotaoAcao(
               icone: Icons.inventory_2_outlined,
               corFundo: isDark ? const Color(0xFF2A2A1A) : Colors.amber.shade100, // Fundo escurecido

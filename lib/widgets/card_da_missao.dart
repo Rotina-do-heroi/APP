@@ -51,14 +51,21 @@ class _CardDaMissaoState extends State<CardDaMissao> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final corFundoDialog = isDark ? const Color(0xFF1E1E2A) : Colors.white;
+        final corTextoDialog = isDark ? Colors.white : Colors.black87;
+        final corTextoSecundario = isDark ? Colors.white70 : Colors.black54;
+        final corFundoInput = isDark ? const Color(0xFF13131A) : Colors.grey.shade100;
+        final corBordaInput = isDark ? const Color(0xFF2E2E40) : Colors.grey.shade300;
+
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             return AlertDialog(
-              backgroundColor: const Color(0xFF1E1E2A),
-              title: const Text(
+              backgroundColor: corFundoDialog,
+              title: Text(
                 'Nova missão',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: corTextoDialog,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -68,29 +75,29 @@ class _CardDaMissaoState extends State<CardDaMissao> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       '📊 Titulo da missão',
                       style: TextStyle(
-                        color: Colors.white70,
+                        color: corTextoSecundario,
                         fontSize: 14,
                       ),
                     ),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _controladorTitulo,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: corTextoDialog),
                       decoration: InputDecoration(
                         hintText: 'Digite o título da missão',
                         hintStyle: const TextStyle(color: Colors.grey),
                         filled: true,
-                        fillColor: const Color(0xFF13131A),
+                        fillColor: corFundoInput,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFF2E2E40)),
+                          borderSide: BorderSide(color: corBordaInput),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFF2E2E40)),
+                          borderSide: BorderSide(color: corBordaInput),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -99,29 +106,29 @@ class _CardDaMissaoState extends State<CardDaMissao> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'Descrição (Opcional)',
                       style: TextStyle(
-                        color: Colors.white70,
+                        color: corTextoSecundario,
                         fontSize: 14,
                       ),
                     ),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _controladorDescricao,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: corTextoDialog),
                       decoration: InputDecoration(
                         hintText: 'Digite a descrição da missão',
                         hintStyle: const TextStyle(color: Colors.grey),
                         filled: true,
-                        fillColor: const Color(0xFF13131A),
+                        fillColor: corFundoInput,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFF2E2E40)),
+                          borderSide: BorderSide(color: corBordaInput),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFF2E2E40)),
+                          borderSide: BorderSide(color: corBordaInput),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -130,10 +137,10 @@ class _CardDaMissaoState extends State<CardDaMissao> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'Prioridade',
                       style: TextStyle(
-                        color: Colors.white70,
+                        color: corTextoSecundario,
                         fontSize: 14,
                       ),
                     ),
@@ -153,20 +160,20 @@ class _CardDaMissaoState extends State<CardDaMissao> {
                             decoration: BoxDecoration(
                               color: _prioridadeSelecionada == 'alta'
                                   ? Colors.red
-                                  : const Color(0xFF13131A),
+                                  : corFundoInput,
                               border: Border.all(
                                 color: _prioridadeSelecionada == 'alta'
                                     ? Colors.red
-                                    : const Color(0xFF2E2E40),
+                                    : corBordaInput,
                                 width: 2,
                               ),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Center(
+                            child: Center(
                               child: Text(
                                 'Alta',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: _prioridadeSelecionada == 'alta' ? Colors.white : corTextoDialog,
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -186,20 +193,20 @@ class _CardDaMissaoState extends State<CardDaMissao> {
                             decoration: BoxDecoration(
                               color: _prioridadeSelecionada == 'media'
                                   ? Colors.amber
-                                  : const Color(0xFF13131A),
+                                  : corFundoInput,
                               border: Border.all(
                                 color: _prioridadeSelecionada == 'media'
                                     ? Colors.amber
-                                    : const Color(0xFF2E2E40),
+                                    : corBordaInput,
                                 width: 2,
                               ),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Center(
+                            child: Center(
                               child: Text(
                                 'Média',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: _prioridadeSelecionada == 'media' ? Colors.white : corTextoDialog,
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -219,20 +226,20 @@ class _CardDaMissaoState extends State<CardDaMissao> {
                             decoration: BoxDecoration(
                               color: _prioridadeSelecionada == 'baixa'
                                   ? Colors.green
-                                  : const Color(0xFF13131A),
+                                  : corFundoInput,
                               border: Border.all(
                                 color: _prioridadeSelecionada == 'baixa'
                                     ? Colors.green
-                                    : const Color(0xFF2E2E40),
+                                    : corBordaInput,
                                 width: 2,
                               ),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Center(
+                            child: Center(
                               child: Text(
                                 'Baixa',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: _prioridadeSelecionada == 'baixa' ? Colors.white : corTextoDialog,
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -243,10 +250,10 @@ class _CardDaMissaoState extends State<CardDaMissao> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'Atributo Relacionado (Recompensa)',
                       style: TextStyle(
-                        color: Colors.white70,
+                        color: corTextoSecundario,
                         fontSize: 14,
                       ),
                     ),
@@ -255,18 +262,18 @@ class _CardDaMissaoState extends State<CardDaMissao> {
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        _buildBotaoAtributo('Foco', Icons.my_location, const Color(0xFF6B4EFF), setState),
-                        _buildBotaoAtributo('Disciplina', Icons.assignment_turned_in, Colors.orangeAccent, setState),
-                        _buildBotaoAtributo('Intelecto', Icons.psychology, Colors.blueAccent, setState),
-                        _buildBotaoAtributo('Força', Icons.fitness_center, const Color(0xFF4ADE80), setState),
-                        _buildBotaoAtributo('Consistência', Icons.loop, Colors.redAccent, setState),
+                        _buildBotaoAtributo('Foco', Icons.my_location, const Color(0xFF6B4EFF), setState, isDark),
+                        _buildBotaoAtributo('Disciplina', Icons.assignment_turned_in, Colors.orangeAccent, setState, isDark),
+                        _buildBotaoAtributo('Intelecto', Icons.psychology, Colors.blueAccent, setState, isDark),
+                        _buildBotaoAtributo('Força', Icons.fitness_center, const Color(0xFF4ADE80), setState, isDark),
+                        _buildBotaoAtributo('Consistência', Icons.loop, Colors.redAccent, setState, isDark),
                       ],
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'Sessões de Foco Necessárias',
                       style: TextStyle(
-                        color: Colors.white70,
+                        color: corTextoSecundario,
                         fontSize: 14,
                       ),
                     ),
@@ -277,15 +284,15 @@ class _CardDaMissaoState extends State<CardDaMissao> {
                           onPressed: _sessoesNecessarias > 1
                               ? () => setState(() => _sessoesNecessarias--)
                               : null,
-                          icon: const Icon(Icons.remove_circle_outline, color: Colors.white),
+                          icon: Icon(Icons.remove_circle_outline, color: corTextoDialog),
                         ),
                         Text(
                           '$_sessoesNecessarias',
-                          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                          style: TextStyle(color: corTextoDialog, fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                         IconButton(
                           onPressed: () => setState(() => _sessoesNecessarias++),
-                          icon: const Icon(Icons.add_circle_outline, color: Colors.white),
+                          icon: Icon(Icons.add_circle_outline, color: corTextoDialog),
                         ),
                         const SizedBox(width: 8),
                         const Text(
@@ -295,29 +302,29 @@ class _CardDaMissaoState extends State<CardDaMissao> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'Micro-passos',
                       style: TextStyle(
-                        color: Colors.white70,
+                        color: corTextoSecundario,
                         fontSize: 14,
                       ),
                     ),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _controladorMicroPasso,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: corTextoDialog),
                       decoration: InputDecoration(
                         hintText: 'Digite um micro-passo',
                         hintStyle: const TextStyle(color: Colors.grey),
                         filled: true,
-                        fillColor: const Color(0xFF13131A),
+                        fillColor: corFundoInput,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFF2E2E40)),
+                          borderSide: BorderSide(color: corBordaInput),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFF2E2E40)),
+                          borderSide: BorderSide(color: corBordaInput),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -352,19 +359,19 @@ class _CardDaMissaoState extends State<CardDaMissao> {
                               Expanded(
                                 child: TextField(
                                   controller: controller,
-                                  style: const TextStyle(color: Colors.white),
+                                  style: TextStyle(color: corTextoDialog),
                                   decoration: InputDecoration(
                                     hintText: 'Micro-passo adicional ${index + 1}',
                                     hintStyle: const TextStyle(color: Colors.grey),
                                     filled: true,
-                                    fillColor: const Color(0xFF13131A),
+                                    fillColor: corFundoInput,
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(8),
-                                      borderSide: const BorderSide(color: Color(0xFF2E2E40)),
+                                      borderSide: BorderSide(color: corBordaInput),
                                     ),
                                     enabledBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(8),
-                                      borderSide: const BorderSide(color: Color(0xFF2E2E40)),
+                                      borderSide: BorderSide(color: corBordaInput),
                                     ),
                                     focusedBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(8),
@@ -459,8 +466,11 @@ class _CardDaMissaoState extends State<CardDaMissao> {
     );
   }
 
-  Widget _buildBotaoAtributo(String nome, IconData icone, Color cor, StateSetter setStateDialogo) {
+  Widget _buildBotaoAtributo(String nome, IconData icone, Color cor, StateSetter setStateDialogo, bool isDark) {
     final isSelecionado = _atributoSelecionado == nome;
+    final corFundoInput = isDark ? const Color(0xFF13131A) : Colors.grey.shade100;
+    final corBordaInput = isDark ? const Color(0xFF2E2E40) : Colors.grey.shade300;
+    final corTextoDialog = isDark ? Colors.white : Colors.black87;
     
     return GestureDetector(
       onTap: () {
@@ -472,9 +482,9 @@ class _CardDaMissaoState extends State<CardDaMissao> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelecionado ? cor.withOpacity(0.2) : const Color(0xFF13131A),
+          color: isSelecionado ? cor.withOpacity(0.2) : corFundoInput,
           border: Border.all(
-            color: isSelecionado ? cor : const Color(0xFF2E2E40),
+            color: isSelecionado ? cor : corBordaInput,
             width: 2,
           ),
           borderRadius: BorderRadius.circular(12),
@@ -487,7 +497,7 @@ class _CardDaMissaoState extends State<CardDaMissao> {
             Text(
               nome,
               style: TextStyle(
-                color: isSelecionado ? Colors.white : Colors.grey,
+                color: isSelecionado ? corTextoDialog : Colors.grey,
                 fontSize: 12,
                 fontWeight: isSelecionado ? FontWeight.bold : FontWeight.normal,
               ),

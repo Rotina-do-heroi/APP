@@ -1,11 +1,11 @@
 // Arquivo: lib/screens/tela_hiperfoco.dart
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async'; // <-- IMPORTANTE: Biblioteca para usar o Timer
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import '../models/missao.dart';
-import 'tela_inicial.dart'; // Importa missoesNotifier e apiMissoesUrl
+import 'tela_inicial.dart'; // Importa missoesNotifier
+import '../services/missao_service.dart';
 
 class TelaHiperfoco extends StatefulWidget {
   const TelaHiperfoco({super.key});
@@ -23,6 +23,11 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
   Timer? _timer;
   int _segundosRestantes = 25 * 60; // Começa com 25 minutos em segundos
   
+  // Chaves para o Tutorial
+  final GlobalKey _keyAbas = GlobalKey();
+  final GlobalKey _keyTimer = GlobalKey();
+  final GlobalKey _keyControles = GlobalKey();
+
   // Limpa o timer da memória quando a tela for fechada (Boa prática de performance)
   @override
   void dispose() {
@@ -40,6 +45,146 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
         _iniciarPausarTimer(); // Dá play automático no timer
       });
     }
+    _verificarTutorial();
+  }
+
+  Future<void> _verificarTutorial() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('user_id') ?? '';
+    final chaveTutorial = 'primeiro_acesso_hiperfoco_$userId';
+    // Puxa se é o primeiro acesso na tela de Hiperfoco
+    final bool primeiroAcesso = prefs.getBool(chaveTutorial) ?? true;
+
+    if (primeiroAcesso) {
+      Future.delayed(const Duration(milliseconds: 800), () {
+        if (mounted) _showHiperfocoTutorial(context);
+      });
+      // Salva que o usuário já viu o tutorial dessa tela
+      await prefs.setBool(chaveTutorial, false);
+    }
+  }
+
+  void _showHiperfocoTutorial(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    TutorialCoachMark(
+      targets: [
+        TargetFocus(
+          identify: "abas",
+          keyTarget: _keyAbas,
+          contents: [
+            TargetContent(
+              align: ContentAlign.bottom,
+              builder: (context, controller) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (_keyAbas.currentContext != null) {
+                    Scrollable.ensureVisible(_keyAbas.currentContext!,
+                        duration: const Duration(milliseconds: 300), alignment: 0.5);
+                  }
+                });
+                return Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF252536) : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFF6B4EFF), width: 2),
+                    boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Modos de Tempo ⏳", style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 22, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 10),
+                      Text("Alterne entre Foco, Pausa Curta e Pausa Longa. O cronômetro ajusta automaticamente.", style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 16)),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+        TargetFocus(
+          identify: "timer",
+          keyTarget: _keyTimer,
+          contents: [
+            TargetContent(
+              align: ContentAlign.bottom,
+              builder: (context, controller) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (_keyTimer.currentContext != null) {
+                    Scrollable.ensureVisible(_keyTimer.currentContext!,
+                        duration: const Duration(milliseconds: 300), alignment: 0.5);
+                  }
+                });
+                return Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF252536) : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFF6B4EFF), width: 2),
+                    boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Cronômetro ⏱️", style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 22, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 10),
+                      Text("Acompanhe seu tempo aqui. Cumpra o foco até o relógio zerar para computar a sessão e ganhar XP!", style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 16)),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+        TargetFocus(
+          identify: "controles",
+          keyTarget: _keyControles,
+          contents: [
+            TargetContent(
+              align: ContentAlign.top,
+              builder: (context, controller) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (_keyControles.currentContext != null) {
+                    Scrollable.ensureVisible(_keyControles.currentContext!,
+                        duration: const Duration(milliseconds: 300), alignment: 0.5);
+                  }
+                });
+                return Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF252536) : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFF6B4EFF), width: 2),
+                    boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Controles ⏯️", style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 22, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 10),
+                      Text("Inicie ou pause sua sessão. Você também pode resetar caso se perca, ou pular de fase se terminar rápido.", style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 16)),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ],
+      colorShadow: Colors.black,
+      textSkip: "PULAR TUTORIAL",
+      textStyleSkip: const TextStyle(
+        color: Colors.white,
+        fontWeight: FontWeight.bold,
+        fontFamily: 'monospace',
+        letterSpacing: 1.5,
+      ),
+      paddingFocus: 10,
+      opacityShadow: 0.85,
+    ).show(context: context);
   }
 
   // --- LÓGICA DO CRONÔMETRO ---
@@ -96,19 +241,10 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
       // --- ATUALIZA O PROGRESSO NO BANCO DE DADOS (API) ---
       if (missao.id != null) {
         try {
-          final prefs = await SharedPreferences.getInstance();
-          final token = prefs.getString('jwt_token') ?? '';
-          
-          await http.put(
-            Uri.parse('$apiMissoesUrl/tarefas/${missao.id}'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $token',
-            },
-            body: jsonEncode({
-              'sessoesConcluidas': missao.sessoesConcluidas,
-              'concluida': missao.concluida,
-            }),
+          await MissaoService.atualizarProgressoMissao(
+            missao.id!,
+            missao.sessoesConcluidas,
+            missao.concluida,
           );
         } catch (e) {
           debugPrint('Erro ao atualizar progresso na API: $e');
@@ -160,26 +296,13 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
 
   Future<void> _salvarSessaoFoco() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('jwt_token') ?? '';
-
-      final response = await http.post(
-        Uri.parse('$apiMissoesUrl/hiperfoco/sessao'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({
-          'duracaoMinutos': 25,
-        }),
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('+ XP! Sessão de Foco salva com sucesso!'), backgroundColor: Colors.green),
-          );
-        }
+      // O tempo do ciclo principal de hiperfoco é 25 minutos
+      await MissaoService.salvarSessaoHiperfoco(25);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('+ XP! Sessão de Foco salva com sucesso!'), backgroundColor: Colors.green),
+        );
       }
     } catch (e) {
       debugPrint('Erro ao salvar sessão de foco: $e');
@@ -231,17 +354,27 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(Icons.timer_outlined, color: corTextoPrincipal, size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  'Modo Hiperfoco',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: corTextoPrincipal,
-                    fontFamily: 'monospace', 
-                  ),
+                Row(
+                  children: [
+                    Icon(Icons.timer_outlined, color: corTextoPrincipal, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Modo Hiperfoco',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: corTextoPrincipal,
+                        fontFamily: 'monospace', 
+                      ),
+                    ),
+                  ],
+                ),
+                IconButton(
+                  icon: Icon(Icons.help_outline, color: isDark ? Colors.blueAccent : Colors.blue),
+                  onPressed: () => _showHiperfocoTutorial(context),
+                  tooltip: 'Ver Tutorial',
                 ),
               ],
             ),
@@ -256,6 +389,7 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
               child: Column(
                 children: [
                   Container(
+                    key: _keyAbas,
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
                       color: corFundoSub,
@@ -273,6 +407,7 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
                   const SizedBox(height: 48),
 
                   Container(
+                    key: _keyTimer,
                     width: 240,
                     height: 240,
                     decoration: BoxDecoration(
@@ -339,6 +474,7 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
                   const SizedBox(height: 32),
 
                   Row(
+                    key: _keyControles,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       // Botão Resetar (Agora tem função!)
