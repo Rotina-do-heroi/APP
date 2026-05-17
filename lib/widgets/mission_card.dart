@@ -5,12 +5,14 @@ class MissionCard extends StatefulWidget {
   final Missao missao;
   final ValueChanged<Missao> onMissaoAtualizada;
   final VoidCallback onDeletarMissao;
+  final VoidCallback onFocoRapido;
 
   const MissionCard({
     super.key,
     required this.missao,
     required this.onMissaoAtualizada,
     required this.onDeletarMissao,
+    required this.onFocoRapido,
   });
 
   @override
@@ -178,6 +180,15 @@ class _MissionCardState extends State<MissionCard> {
                     ),
                   ),
                   const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: widget.onFocoRapido,
+                    child: const Icon(
+                      Icons.center_focus_strong,
+                      color: Color(0xFFA855F7),
+                      size: 26,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
                   GestureDetector(
                     onTap: () => _confirmarDelecao(context),
                     child: const Icon(

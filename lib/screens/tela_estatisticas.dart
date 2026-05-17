@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
 import 'dart:math' show pi, cos, sin;
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
+import '../services/estatisticas_service.dart';
 
 class TelaEstatisticas extends StatefulWidget {
   const TelaEstatisticas({super.key});
@@ -23,48 +21,127 @@ class _TelaEstatisticasState extends State<TelaEstatisticas> {
 
   bool _isLoading = true;
 
+  // Chaves para o Tutorial
+  final GlobalKey _keyGrafico = GlobalKey();
+  final GlobalKey _keyHabilidades = GlobalKey();
+
   @override
   void initState() {
     super.initState();
     _fetchEstatisticas();
+    _verificarTutorial();
+  }
+
+  Future<void> _verificarTutorial() async {
+    final prefs = await SharedPreferences.getInstance();
+    // Puxa se é o primeiro acesso na tela de Estatísticas
+    final bool primeiroAcesso = prefs.getBool('primeiro_acesso_estatisticas') ?? true;
+
+    if (primeiroAcesso) {
+      Future.delayed(const Duration(milliseconds: 800), () {
+        if (mounted) _showEstatisticasTutorial(context);
+      });
+      // Salva que o usuário já viu o tutorial dessa tela
+      await prefs.setBool('primeiro_acesso_estatisticas', false);
+    }
+  }
+
+  void _showEstatisticasTutorial(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    TutorialCoachMark(
+      targets: [
+        TargetFocus(
+          identify: "grafico",
+          keyTarget: _keyGrafico,
+          contents: [
+            TargetContent(
+              align: ContentAlign.bottom,
+              builder: (context, controller) {
+                return Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF252536) : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFF6B4EFF), width: 2),
+                    boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Gráfico de Radar 🕸️", style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 22, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 10),
+                      Text("Visualize rapidamente o equilíbrio dos seus atributos. Um herói forte é um herói equilibrado!", style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 16)),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+        TargetFocus(
+          identify: "habilidades",
+          keyTarget: _keyHabilidades,
+          contents: [
+            TargetContent(
+              align: ContentAlign.top,
+              builder: (context, controller) {
+                return Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF252536) : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFF6B4EFF), width: 2),
+                    boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Detalhes e Níveis 📈", style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 22, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 10),
+                      Text("Entenda como cada atributo funciona e o que você precisa fazer para subir o nível deles.", style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 16)),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ],
+      colorShadow: Colors.black,
+      textSkip: "PULAR TUTORIAL",
+      textStyleSkip: const TextStyle(
+        color: Colors.white,
+        fontWeight: FontWeight.bold,
+        fontFamily: 'monospace',
+        letterSpacing: 1.5,
+      ),
+      paddingFocus: 10,
+      opacityShadow: 0.85,
+    ).show(context: context);
   }
 
   Future<void> _fetchEstatisticas() async {
-    String baseUrl = 'http://localhost:3000';
-    if (!kIsWeb && Platform.isAndroid) {
-      baseUrl = 'http://10.0.2.2:3000';
-    }
-
     try {
-      // ATENÇÃO: Substitua '/estatisticas' pela rota real da sua API.
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('jwt_token') ?? '';
-
-      final response = await http.get(
-        Uri.parse('$baseUrl/estatisticas'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        }
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (mounted) {
-          setState(() {
-            focValue = (data['foco'] ?? 0).toDouble();
-            disValue = (data['disciplina'] ?? 0).toDouble();
-            intValue = (data['intelecto'] ?? 0).toDouble();
-            forValue = (data['forca'] ?? 0).toDouble();
-            conValue = (data['consistencia'] ?? 0).toDouble();
-            _isLoading = false;
-          });
-        }
-      } else {
-        if (mounted) setState(() => _isLoading = false);
+      final estatisticas = await EstatisticasService.buscarEstatisticas();
+      if (mounted) {
+        setState(() {
+          focValue = estatisticas['foco'] ?? 0;
+          disValue = estatisticas['disciplina'] ?? 0;
+          intValue = estatisticas['intelecto'] ?? 0;
+          forValue = estatisticas['forca'] ?? 0;
+          conValue = estatisticas['consistencia'] ?? 0;
+          _isLoading = false;
+        });
       }
     } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
+      debugPrint('Erro ao buscar estatísticas: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -87,17 +164,27 @@ class _TelaEstatisticasState extends State<TelaEstatisticas> {
             children: [
               // Cabeçalho
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Icon(Icons.bar_chart_outlined, color: corTextoPrincipal, size: 24),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Atributos do Herói',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: corTextoPrincipal,
-                      fontFamily: 'monospace',
-                    ),
+                  Row(
+                    children: [
+                      Icon(Icons.bar_chart_outlined, color: corTextoPrincipal, size: 24),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Atributos do Herói',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: corTextoPrincipal,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.help_outline, color: isDark ? Colors.blueAccent : Colors.blue),
+                    onPressed: () => _showEstatisticasTutorial(context),
+                    tooltip: 'Ver Tutorial',
                   ),
                 ],
               ),
@@ -106,6 +193,7 @@ class _TelaEstatisticasState extends State<TelaEstatisticas> {
               // Gráfico de Radar (Custom Painter)
               Center(
                 child: Container(
+                  key: _keyGrafico,
                   height: 300,
                   width: 300,
                   padding: const EdgeInsets.all(24),
@@ -135,60 +223,67 @@ class _TelaEstatisticasState extends State<TelaEstatisticas> {
               const SizedBox(height: 16),
 
               // Lista de Habilidades Detalhadas
-              _buildSkillCard(
-                sigla: 'FOC',
-                nome: 'Foco',
-                icone: Icons.my_location,
-                cor: const Color(0xFF6B4EFF),
-                level: (focValue / 10).floor(),
-                descricao: 'Mede a qualidade da sua concentração e o respeito ao método de Hiperfoco.',
-                criterio: 'Baseado em Sessões de Hiperfoco.',
-                exemplo: 'Conclua 10 sessões de 25min sem pausas antes da hora para ganhar 1 FOC.',
-                isDark: isDark,
-              ),
-              _buildSkillCard(
-                sigla: 'DIS',
-                nome: 'Disciplina',
-                icone: Icons.assignment_turned_in,
-                cor: Colors.orangeAccent,
-                level: (disValue / 10).floor(),
-                descricao: 'Sua capacidade de lidar com tarefas diárias e não deixar pendências.',
-                criterio: 'Baseado em Quantidade de Tarefas.',
-                exemplo: 'A cada 15 subtarefas concluídas, ganhe 1 DIS.',
-                isDark: isDark,
-              ),
-              _buildSkillCard(
-                sigla: 'INT',
-                nome: 'Intelecto',
-                icone: Icons.psychology,
-                cor: Colors.blueAccent,
-                level: (intValue / 10).floor(),
-                descricao: 'Representa o tempo dedicado ao aprendizado profundo e à absorção de conhecimento.',
-                criterio: 'Baseado em Horas de Estudo.',
-                exemplo: 'A cada 5 horas acumuladas em "Estudo" ou "Leitura", ganhe 1 INT.',
-                isDark: isDark,
-              ),
-              _buildSkillCard(
-                sigla: 'FOR',
-                nome: 'Força',
-                icone: Icons.fitness_center,
-                cor: const Color(0xFF4ADE80),
-                level: (forValue / 10).floor(),
-                descricao: 'Cuidado com o corpo. Evita o burnout e mantém sua saúde física.',
-                criterio: 'Baseado em Hábitos de Manutenção.',
-                exemplo: 'Pratique exercícios físicos. A cada 3 dias consecutivos, ganhe 1 FOR.',
-                isDark: isDark,
-              ),
-              _buildSkillCard(
-                sigla: 'CON',
-                nome: 'Consistência',
-                icone: Icons.loop,
-                cor: Colors.redAccent,
-                level: (conValue / 10).floor(),
-                descricao: 'A constância e a capacidade de manter a rotina mesmo em dias desafiadores.',
-                criterio: 'Baseado em Streaks (Ofensivas).',
-                exemplo: 'A cada 7 dias seguidos de login e 1 tarefa concluída, ganhe 1 CON.',
-                isDark: isDark,
+              Container(
+                key: _keyHabilidades,
+                child: Column(
+                  children: [
+                    _buildSkillCard(
+                      sigla: 'FOC',
+                      nome: 'Foco',
+                      icone: Icons.my_location,
+                      cor: const Color(0xFF6B4EFF),
+                      level: (focValue / 10).floor(),
+                      descricao: 'Mede a qualidade da sua concentração e o respeito ao método de Hiperfoco.',
+                      criterio: 'Baseado em Sessões de Hiperfoco.',
+                      exemplo: 'Conclua 10 sessões de 25min sem pausas antes da hora para ganhar 1 FOC.',
+                      isDark: isDark,
+                    ),
+                    _buildSkillCard(
+                      sigla: 'DIS',
+                      nome: 'Disciplina',
+                      icone: Icons.assignment_turned_in,
+                      cor: Colors.orangeAccent,
+                      level: (disValue / 10).floor(),
+                      descricao: 'Sua capacidade de lidar com tarefas diárias e não deixar pendências.',
+                      criterio: 'Baseado em Quantidade de Tarefas.',
+                      exemplo: 'A cada 15 subtarefas concluídas, ganhe 1 DIS.',
+                      isDark: isDark,
+                    ),
+                    _buildSkillCard(
+                      sigla: 'INT',
+                      nome: 'Intelecto',
+                      icone: Icons.psychology,
+                      cor: Colors.blueAccent,
+                      level: (intValue / 10).floor(),
+                      descricao: 'Representa o tempo dedicado ao aprendizado profundo e à absorção de conhecimento.',
+                      criterio: 'Baseado em Horas de Estudo.',
+                      exemplo: 'A cada 5 horas acumuladas em "Estudo" ou "Leitura", ganhe 1 INT.',
+                      isDark: isDark,
+                    ),
+                    _buildSkillCard(
+                      sigla: 'FOR',
+                      nome: 'Força',
+                      icone: Icons.fitness_center,
+                      cor: const Color(0xFF4ADE80),
+                      level: (forValue / 10).floor(),
+                      descricao: 'Cuidado com o corpo. Evita o burnout e mantém sua saúde física.',
+                      criterio: 'Baseado em Hábitos de Manutenção.',
+                      exemplo: 'Pratique exercícios físicos. A cada 3 dias consecutivos, ganhe 1 FOR.',
+                      isDark: isDark,
+                    ),
+                    _buildSkillCard(
+                      sigla: 'CON',
+                      nome: 'Consistência',
+                      icone: Icons.loop,
+                      cor: Colors.redAccent,
+                      level: (conValue / 10).floor(),
+                      descricao: 'A constância e a capacidade de manter a rotina mesmo em dias desafiadores.',
+                      criterio: 'Baseado em Streaks (Ofensivas).',
+                      exemplo: 'A cada 7 dias seguidos de login e 1 tarefa concluída, ganhe 1 CON.',
+                      isDark: isDark,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

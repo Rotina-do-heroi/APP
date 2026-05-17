@@ -1,9 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+import '../services/inventario_service.dart';
 
 class TelaInventario extends StatefulWidget {
   const TelaInventario({super.key});
@@ -56,16 +52,7 @@ class _TelaInventarioState extends State<TelaInventario> {
     );
 
     try {
-      String baseUrl = 'http://localhost:3000';
-      if (!kIsWeb && Platform.isAndroid) baseUrl = 'http://10.0.2.2:3000';
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('jwt_token') ?? '';
-      
-      await http.put(
-        Uri.parse('$baseUrl/inventario/titulo'), 
-        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
-        body: jsonEncode({'tituloEquipadoId': idTitulo}),
-      );
+      await InventarioService.equiparTitulo(idTitulo);
     } catch (e) {
       debugPrint('Erro ao salvar título no banco: $e');
     }
@@ -78,44 +65,25 @@ class _TelaInventarioState extends State<TelaInventario> {
   }
 
   Future<void> _fetchInventario() async {
-    String baseUrl = 'http://localhost:3000';
-    if (!kIsWeb && Platform.isAndroid) {
-      baseUrl = 'http://10.0.2.2:3000';
-    }
-
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('jwt_token') ?? '';
+      final data = await InventarioService.buscarInventario();
+      if (mounted) {
+        setState(() {
+          _itemEquipadoId = data['itemEquipadoId'] ?? 1;
+          _tituloEquipadoId = data['tituloEquipadoId'] ?? 1;
+          _nivelUsuario = data['nivel'] ?? 1;
 
-      final response = await http.get(
-        Uri.parse('$baseUrl/me'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (mounted) {
-          setState(() {
-            _itemEquipadoId = data['itemEquipadoId'] ?? 1;
-            _tituloEquipadoId = data['tituloEquipadoId'] ?? 1;
-            _nivelUsuario = data['nivel'] ?? 1;
-
-            if (data['itensDesbloqueados'] != null) {
-              List<dynamic> desbloqueados = data['itensDesbloqueados'];
-              for (var item in _inventario) {
-                item['desbloqueado'] = desbloqueados.contains(item['id']);
-              }
+          if (data['itensDesbloqueados'] != null) {
+            List<dynamic> desbloqueados = data['itensDesbloqueados'];
+            for (var item in _inventario) {
+              item['desbloqueado'] = desbloqueados.contains(item['id']);
             }
-            _isLoading = false;
-          });
-        }
-      } else {
-        if (mounted) setState(() => _isLoading = false);
+          }
+          _isLoading = false;
+        });
       }
     } catch (e) {
+      debugPrint('Erro ao buscar inventário: $e');
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -137,16 +105,7 @@ class _TelaInventarioState extends State<TelaInventario> {
 
     // Faz a requisição no background para atualizar no banco de dados
     try {
-      String baseUrl = 'http://localhost:3000';
-      if (!kIsWeb && Platform.isAndroid) baseUrl = 'http://10.0.2.2:3000';
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('jwt_token') ?? '';
-      
-      await http.put(
-        Uri.parse('$baseUrl/inventario/equipar'),
-        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
-        body: jsonEncode({'itemEquipadoId': idItem}),
-      );
+      await InventarioService.equiparItem(idItem);
     } catch (e) {
       debugPrint('Erro ao salvar item no banco: $e');
     }
