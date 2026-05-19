@@ -23,7 +23,7 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
 
   // Variáveis do Cronômetro
   Timer? _timer;
-  int _segundosRestantes = 25 * 60; // Começa com 25 minutos em segundos
+  int _segundosRestantes = 25 * 1; // Começa com 25 minutos em segundos
   
   // Chaves para o Tutorial
   final GlobalKey _keyAbas = GlobalKey();

@@ -105,13 +105,16 @@ class MissaoService {
         atributoGanho = tags.first; // Ex: 'Intelecto', 'Força', etc.
       }
 
-      final response = await http.put(
-        Uri.parse('$baseUrl/tarefas/$missaoId'),
+      final userId = prefs.getString('user_id');
+
+      final response = await http.patch(
+        Uri.parse('$baseUrl/missoes/$missaoId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
         body: jsonEncode({
+          'userId': userId,
           'sessoesConcluidas': sessoesConcluidas,
           'concluida': concluida,
           if (atributoGanho != null) 'atributoGanho': atributoGanho, // Envia o bônus para a API
@@ -131,18 +134,15 @@ class MissaoService {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('jwt_token') ?? '';
 
-      // Como o XP pertence ao Usuário, enviamos para a API de Autenticação!
-      const authApiUrl = 'https://api-autenticacao-production.up.railway.app';
-
       final response = await http.post(
-        Uri.parse('$authApiUrl/hiperfoco/sessao'),
+        Uri.parse('$baseUrl/hiperfoco/sessao'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
         body: jsonEncode({
           'duracaoMinutos': duracaoMinutos,
-          'xpBonus': xpBonus, // Adicionamos o envio do bônus de XP da ofensiva
+          'xpBonus': xpBonus,
         }),
       );
 
