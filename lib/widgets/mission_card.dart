@@ -23,7 +23,7 @@ class _MissionCardState extends State<MissionCard> {
   bool _estaExpandido = false;
 
   Color _corPrioridade(String prioridade) {
-    switch (prioridade) {
+    switch (prioridade.toLowerCase()) {
       case 'alta':
         return Colors.red;
       case 'media':
@@ -36,7 +36,7 @@ class _MissionCardState extends State<MissionCard> {
   }
 
   String _tituloPrioridade(String prioridade) {
-    switch (prioridade) {
+    switch (prioridade.toLowerCase()) {
       case 'alta':
         return 'Alta';
       case 'media':

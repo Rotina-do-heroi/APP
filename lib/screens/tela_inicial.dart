@@ -25,6 +25,21 @@ class TelaInicialTarefas extends StatefulWidget {
 }
 
 class _TelaInicialTarefasState extends State<TelaInicialTarefas> {
+  @override
+  void initState() {
+    super.initState();
+    _carregarMissoes();
+  }
+
+  Future<void> _carregarMissoes() async {
+    try {
+      final missoes = await MissaoService.obterMissoes();
+      missoesNotifier.value = missoes;
+    } catch (e) {
+      debugPrint('Erro ao carregar missões: $e');
+    }
+  }
+
   Future<void> _adicionarMissao(Missao missao) async {
     // Atualiza o estado global e notifica quem estiver escutando
     missoesNotifier.value = List.from(missoesNotifier.value)..add(missao);
