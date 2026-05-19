@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math' show pi, cos, sin;
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
-import '../services/estatisticas_service.dart';
+import '../services/perfil_service.dart';
 
 class TelaEstatisticas extends StatefulWidget {
   const TelaEstatisticas({super.key});
@@ -141,17 +141,18 @@ class _TelaEstatisticasState extends State<TelaEstatisticas> {
 
   Future<void> _fetchEstatisticas() async {
     try {
-      // Acessando a API de Estatísticas pelo método estático
-      final estatisticas = await EstatisticasService.buscarEstatisticas();
+      // Utiliza o PerfilService que já busca e mescla os dados da API Geral do RPG
+      final perfilData = await PerfilService.buscarPerfil();
+      final estatisticas = perfilData['estatisticas'];
       
       if (!mounted) return;
       
       setState(() {
-        focValue = estatisticas['foco'] ?? 0;
-        disValue = estatisticas['disciplina'] ?? 0;
-        intValue = estatisticas['intelecto'] ?? 0;
-        forValue = estatisticas['forca'] ?? 0;
-        conValue = estatisticas['consistencia'] ?? 0;
+        focValue = double.tryParse(estatisticas['foco'].toString()) ?? 0;
+        disValue = double.tryParse(estatisticas['disciplina'].toString()) ?? 0;
+        intValue = double.tryParse(estatisticas['intelecto'].toString()) ?? 0;
+        forValue = double.tryParse(estatisticas['forca'].toString()) ?? 0;
+        conValue = double.tryParse(estatisticas['consistencia'].toString()) ?? 0;
         _isLoading = false;
       });
     } catch (e) {
@@ -224,7 +225,7 @@ class _TelaEstatisticasState extends State<TelaEstatisticas> {
                     size: const Size(250, 250),
                     painter: RadarChartPainter(
                       valores: [focValue, disValue, intValue, forValue, conValue],
-                      labels: ['FOC', 'DIS', 'INT', 'FOR', 'CON'],
+                      labels: ['FOC', 'COR', 'INT', 'FOR', 'CON'],
                       corPrimaria: const Color(0xFF6B4EFF),
                       corFundo: isDark ? const Color(0xFF252536) : Colors.grey.shade300,
                       corTextoLabel: corTextoPrincipal,
@@ -250,21 +251,21 @@ class _TelaEstatisticasState extends State<TelaEstatisticas> {
                       nome: 'Foco',
                       icone: Icons.my_location,
                       cor: const Color(0xFF6B4EFF),
-                      level: (focValue / 10).floor(),
+                      level: (focValue / 10).floor() + 1, // Começa no Nível 1
                       descricao: 'Mede a qualidade da sua concentração e o respeito ao método de Hiperfoco.',
                       criterio: 'Baseado em Sessões de Hiperfoco.',
                     exemplo: 'Conclua 1 sessão inteira sem pausas para ganhar 1 FOC.',
                       isDark: isDark,
                     ),
                     _buildSkillCard(
-                      sigla: 'DIS',
-                      nome: 'Disciplina',
-                      icone: Icons.assignment_turned_in,
+                      sigla: 'COR',
+                      nome: 'Coragem',
+                      icone: Icons.local_fire_department,
                       cor: Colors.orangeAccent,
-                      level: (disValue / 10).floor(),
-                      descricao: 'Sua capacidade de lidar com tarefas diárias e não deixar pendências.',
-                      criterio: 'Baseado em Quantidade de Tarefas.',
-                    exemplo: 'Finalize uma tarefa antes de sair do aplicativo para ganhar 1 DIS.',
+                      level: (disValue / 10).floor() + 1, // Começa no Nível 1
+                      descricao: 'Sua bravura para enfrentar as missões mais difíceis e importantes do dia sem hesitar.',
+                      criterio: 'Baseado em Missões de Prioridade Alta.',
+                      exemplo: 'Conclua missões marcadas como Prioridade Alta para ganhar 1 COR.',
                       isDark: isDark,
                     ),
                     _buildSkillCard(
@@ -272,7 +273,7 @@ class _TelaEstatisticasState extends State<TelaEstatisticas> {
                       nome: 'Intelecto',
                       icone: Icons.psychology,
                       cor: Colors.blueAccent,
-                      level: (intValue / 10).floor(),
+                      level: (intValue / 10).floor() + 1, // Começa no Nível 1
                       descricao: 'Representa o tempo dedicado ao aprendizado profundo e à absorção de conhecimento.',
                       criterio: 'Baseado em Horas de Estudo.',
                     exemplo: 'A cada 1 hora acumulada em "Estudo" ou "Leitura", ganhe 1 INT.',
@@ -283,7 +284,7 @@ class _TelaEstatisticasState extends State<TelaEstatisticas> {
                       nome: 'Força',
                       icone: Icons.fitness_center,
                       cor: const Color(0xFF4ADE80),
-                      level: (forValue / 10).floor(),
+                      level: (forValue / 10).floor() + 1, // Começa no Nível 1
                       descricao: 'Cuidado com o corpo. Evita o burnout e mantém sua saúde física.',
                       criterio: 'Baseado em Hábitos de Manutenção.',
                     exemplo: 'Complete uma missão relacionada a este atributo para ganhar 1 FOR.',
@@ -294,7 +295,7 @@ class _TelaEstatisticasState extends State<TelaEstatisticas> {
                       nome: 'Consistência',
                       icone: Icons.loop,
                       cor: Colors.redAccent,
-                      level: (conValue / 10).floor(),
+                      level: (conValue / 10).floor() + 1, // Começa no Nível 1
                       descricao: 'A constância e a capacidade de manter a rotina mesmo em dias desafiadores.',
                       criterio: 'Baseado em Streaks (Ofensivas).',
                     exemplo: 'Faça login e conclua pelo menos 1 missão no dia para ganhar 1 CON.',
@@ -472,12 +473,18 @@ class RadarChartPainter extends CustomPainter {
       textPainter.paint(canvas, Offset(xLabel - textPainter.width / 2, yLabel - textPainter.height / 2));
     }
 
+    // Encontra o maior atributo para escalar o gráfico dinamicamente (Mínimo de 10)
+    double maxValue = 10;
+    for (var v in valores) {
+      if (v > maxValue) maxValue = v;
+    }
+
     // 3. Desenhar a Área do Atributo Atual
     Path pathValor = Path();
     for (int i = 0; i < numPontos; i++) {
       double angulo = -pi / 2 + (2 * pi / numPontos) * i;
-      // O valor máximo é 100, então mapeamos de 0-100 para o raio.
-      double raioValor = radius * (valores[i] / 100);
+      // Escala o raio baseado no maxValue dinâmico
+      double raioValor = radius * (valores[i] / maxValue);
       double x = centerX + raioValor * cos(angulo);
       double y = centerY + raioValor * sin(angulo);
       if (i == 0) pathValor.moveTo(x, y);

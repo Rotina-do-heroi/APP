@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async'; // <-- IMPORTANTE: Biblioteca para usar o Timer
+import 'package:wakelock_plus/wakelock_plus.dart'; // Para manter a tela ligada
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import '../models/missao.dart';
 import 'tela_inicial.dart'; // Importa missoesNotifier
@@ -21,9 +22,11 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
   bool _isRodando = false;
   int _comboAtual = 0; // Contador de Ofensivas (Streaks)
 
-  // Variáveis do Cronômetro
+  // Variáveis do Cronômetro - Agora uma para cada modo
   Timer? _timer;
-  int _segundosRestantes = 25 * 60; // Começa com 25 minutos em segundos
+  // [Foco, Pausa Curta, Pausa Longa]
+  late final List<int> _temposPadrao;
+  late List<int> _segundosRestantesPorModo;
   
   // Chaves para o Tutorial
   final GlobalKey _keyAbas = GlobalKey();
@@ -34,12 +37,17 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
   @override
   void dispose() {
     _timer?.cancel();
+    WakelockPlus.disable(); // Garante que a tela volte ao normal se ele fechar a aba
     super.dispose();
   }
 
   @override
   void initState() {
     super.initState();
+    // NOVO: Inicializa os tempos para cada modo
+    _temposPadrao = [25 * 60, 5 * 60, 15 * 60];
+    _segundosRestantesPorModo = List.from(_temposPadrao);
+
     // Verifica se o usuário veio do botão de Foco Rápido
     if (autoStartTimerNotifier.value) {
       autoStartTimerNotifier.value = false;
@@ -199,22 +207,36 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
     if (_isRodando) {
       // Se está rodando, vamos PAUSAR
       _timer?.cancel();
+      WakelockPlus.disable(); // Tela pode apagar novamente
       setState(() {
         _isRodando = false;
       });
     } else {
+      // Bloqueia o início do timer de Foco se nenhuma missão estiver selecionada
+      if (_modoAtual == 0 && missaoSelecionadaNotifier.value == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Selecione uma tarefa na lista abaixo para focar! 🎯'),
+            backgroundColor: Colors.orangeAccent,
+          ),
+        );
+        return; // Interrompe a função, impedindo o timer de iniciar
+      }
+
       // Se está pausado, vamos INICIAR
+      WakelockPlus.enable(); // Mantém a tela acesa enquanto foca!
       setState(() {
         _isRodando = true;
       });
       // O Timer roda esse bloco de código a cada 1 segundo
       _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
         setState(() {
-          if (_segundosRestantes > 0) {
-            _segundosRestantes--; // Diminui 1 segundo
+          if (_segundosRestantesPorModo[_modoAtual] > 0) {
+            _segundosRestantesPorModo[_modoAtual]--; // Diminui 1 segundo
           } else {
             // O tempo acabou!
             _timer?.cancel();
+            WakelockPlus.disable(); // Tela pode apagar novamente
             
             setState(() {
               _isRodando = false;
@@ -238,11 +260,12 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
       final missao = missaoSelecionadaNotifier.value!;
       missao.sessoesConcluidas++;
       
+      bool recemConcluida = false;
+      bool ganhouConsistencia = false;
+
       if (missao.sessoesConcluidas >= missao.sessoesNecessarias) {
         missao.concluida = true;
-        if (mounted) {
-          _mostrarParabens(missao);
-        }
+        recemConcluida = true;
         missaoSelecionadaNotifier.value = null; // Tira a seleção
       }
       
@@ -252,22 +275,27 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
       // --- ATUALIZA O PROGRESSO NO BANCO DE DADOS (API) ---
       if (missao.id != null) {
         try {
-          await MissaoService.atualizarProgressoMissao(
+          ganhouConsistencia = await MissaoService.atualizarProgressoMissao(
             missao.id!,
             missao.sessoesConcluidas,
             missao.concluida,
             tags: missao.tags,
+            prioridade: missao.prioridade,
           );
         } catch (e) {
           debugPrint('Erro ao atualizar progresso na API: $e');
         }
           
-          if (mounted) await sincronizarProgresso(context); // Sincroniza e checa Level Up
+        if (mounted) await sincronizarProgresso(context); // Sincroniza e checa Level Up
+      }
+
+      if (recemConcluida && mounted) {
+        _mostrarParabens(missao, ganhouConsistencia);
       }
     }
   }
 
-  void _mostrarParabens(Missao missao) {
+  void _mostrarParabens(Missao missao, bool ganhouConsistencia) {
     showDialog(
       context: context,
       builder: (context) {
@@ -293,7 +321,28 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
                   style: TextStyle(fontSize: 16, color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black87),
                 ),
                 const SizedBox(height: 16),
-                const Text('Você ganhou XP e está mais forte!', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
+                Builder(
+                  builder: (context) {
+                    List<String> recompensas = ['XP'];
+                    if (missao.tags.isNotEmpty) recompensas.add('+1 ${missao.tags.first}');
+                    if (missao.prioridade.toUpperCase() == 'ALTA') recompensas.add('+1 Coragem');
+                    if (ganhouConsistencia) recompensas.add('+1 Consistência');
+                    
+                    String textoRecompensas;
+                    if (recompensas.length > 1) {
+                      final ultimos = recompensas.removeLast();
+                      textoRecompensas = 'Recompensas: ${recompensas.join(', ')} e $ultimos!';
+                    } else {
+                      textoRecompensas = 'Recompensas: ${recompensas.first}!';
+                    }
+                    
+                    return Text(
+                      textoRecompensas,
+                      textAlign: TextAlign.center, 
+                      style: const TextStyle(color: Colors.grey, height: 1.5),
+                    );
+                  }
+                ),
                 const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: () => Navigator.of(context).pop(),
@@ -312,12 +361,14 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
     try {
       int bonusXp = _calcularBonusCombo();
       // O tempo do ciclo principal de hiperfoco é 25 minutos
-      await MissaoService.salvarSessaoHiperfoco(25, xpBonus: bonusXp);
+      await MissaoService.salvarSessaoHiperfoco(25, xpBonus: bonusXp, sessaoCompleta: true);
       
       if (!mounted) return;
       
+      int xpTotal = (25 * 10) + bonusXp; // O Back-end dá 10 XP por minuto
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(bonusXp > 0 ? '+ XP! Combo Ativado (+$bonusXp XP Bônus)!' : '+ XP! Sessão de Foco salva com sucesso!'), backgroundColor: Colors.green),
+        SnackBar(content: Text('+$xpTotal XP e +1 Foco! Sessão concluída! ${bonusXp > 0 ? '(+$bonusXp de Bônus)' : ''}'), backgroundColor: Colors.green),
       );
       
       await sincronizarProgresso(context); // Sincroniza o XP e checa Level Up
@@ -335,20 +386,19 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
     }
 
     _timer?.cancel(); // Para o cronômetro
+    WakelockPlus.disable(); // Tela pode apagar novamente
     setState(() {
       if (abortouFoco) _comboAtual = 0; // Zera a streak
       _isRodando = false;
       // Define o tempo de volta para o padrão da aba selecionada
-      if (_modoAtual == 0) _segundosRestantes = 25 * 60;
-      if (_modoAtual == 1) _segundosRestantes = 5 * 60;
-      if (_modoAtual == 2) _segundosRestantes = 15 * 60;
+      _segundosRestantesPorModo[_modoAtual] = _temposPadrao[_modoAtual];
     });
   }
 
   void _confirmarConclusaoAntecipada() {
     // Tempo total da sessão de Foco (25 minutos = 1500 segundos)
     int tempoTotal = 25 * 60;
-    int tempoDecorrido = tempoTotal - _segundosRestantes;
+    int tempoDecorrido = tempoTotal - _segundosRestantesPorModo[_modoAtual];
     
     // Cada 1/5 do tempo equivale a 300 segundos (5 minutos)
     int fracaoTempo = tempoTotal ~/ 5; 
@@ -365,6 +415,11 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
     
     // XP ganho é 1/5 do xpBasePrioridade para cada 1/5 de tempo completado
     int xpGanho = quintosCompletados * (xpBasePrioridade ~/ 5);
+    
+    int minutosDecorridos = (tempoDecorrido / 60).round();
+    if (minutosDecorridos < 1) minutosDecorridos = 1;
+    int xpPeloTempo = minutosDecorridos * 10;
+    int xpTotalPrevisto = xpPeloTempo + xpGanho;
     
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
@@ -384,7 +439,7 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
           content: Text(
             quintosCompletados == 0
                 ? 'Você completou menos de 20% do tempo e NÃO receberá XP se finalizar agora.\n\nTem certeza que deseja abortar a sessão?'
-                : 'Você completou $quintosCompletados/5 do tempo da sessão.\n\nSe finalizar agora, você receberá $xpGanho XP pela prioridade da tarefa.\n\nDeseja concluir a sessão antecipadamente?',
+                : 'Você completou $quintosCompletados/5 do tempo da sessão.\n\nRecompensa:\n• $xpPeloTempo XP pelo tempo focado\n• $xpGanho XP bônus da missão\nTotal: $xpTotalPrevisto XP.\n\nDeseja concluir antecipadamente?',
             style: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
           ),
           actions: [
@@ -408,6 +463,7 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
 
   Future<void> _finalizarSessaoAntecipada(int quintos, int xpGanho, int tempoDecorrido) async {
     _timer?.cancel();
+    WakelockPlus.disable(); // Tela pode apagar novamente
     setState(() {
        _isRodando = false;
     });
@@ -420,9 +476,11 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
           // Salva no backend com o bônus de XP calculado
           await MissaoService.salvarSessaoHiperfoco(minutosDecorridos, xpBonus: xpGanho);
           
+          int xpTotalVisual = (minutosDecorridos * 10) + xpGanho;
+          
           if (mounted) {
              ScaffoldMessenger.of(context).showSnackBar(
-               SnackBar(content: Text('+ XP! Sessão concluída antecipadamente! (+$xpGanho XP)'), backgroundColor: Colors.green),
+               SnackBar(content: Text('+$xpTotalVisual XP! Sessão concluída antecipadamente!'), backgroundColor: Colors.green),
              );
           }
           
@@ -453,8 +511,8 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
 
   // Pega os segundos totais e transforma no formato "MM:SS"
   String get _tempoFormatado {
-    int minutos = _segundosRestantes ~/ 60; // Pega a parte inteira dos minutos
-    int segundos = _segundosRestantes % 60; // Pega o resto dos segundos
+    int minutos = _segundosRestantesPorModo[_modoAtual] ~/ 60; // Pega a parte inteira dos minutos
+    int segundos = _segundosRestantesPorModo[_modoAtual] % 60; // Pega o resto dos segundos
     // O padLeft garante que sempre tenha 2 dígitos (ex: "05" em vez de "5")
     String minStr = minutos.toString().padLeft(2, '0');
     String segStr = segundos.toString().padLeft(2, '0');
@@ -782,11 +840,13 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
     bool isSelecionado = _modoAtual == indice;
     return GestureDetector(
       onTap: () {
-        bool abortou = _isRodando && _modoAtual == 0;
+        // Pausa o cronômetro preservando o tempo em qualquer modo (inclusive Foco)
+        _timer?.cancel();
+        WakelockPlus.disable(); // Tela pode apagar novamente
         setState(() {
+          _isRodando = false;
           _modoAtual = indice;
         });
-        _resetarTimer(abortouFoco: abortou); // <-- Toda vez que muda de aba, ele reseta para o tempo certo!
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),

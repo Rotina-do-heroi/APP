@@ -43,13 +43,15 @@ class MissaoService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('jwt_token') ?? '';
+      final userId = prefs.getString('user_id') ?? '';
 
       final response = await http.delete(
-        Uri.parse('$baseUrl/tarefas/$missaoId'),
+        Uri.parse('$baseUrl/missoes/$missaoId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
+        body: jsonEncode({'userId': userId}),
       );
 
       if (response.statusCode != 200 && response.statusCode != 204) {
@@ -60,47 +62,106 @@ class MissaoService {
     }
   }
 
-  static Future<void> atualizarProgressoMissao(String missaoId, int sessoesConcluidas, bool concluida, {List<String>? tags}) async {
+  static Future<bool> atualizarProgressoMissao(String missaoId, int sessoesConcluidas, bool concluida, {List<String>? tags, String? prioridade}) async {
+    bool ganhouConsistencia = false;
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('jwt_token') ?? '';
+      final userId = prefs.getString('user_id') ?? '';
 
-      String? atributoGanho;
-      if (concluida && tags != null && tags.isNotEmpty) {
-        atributoGanho = tags.first; // Ex: 'Intelecto', 'Força', etc.
+      if (concluida) {
+        // Usa a rota específica que conclui a missão e te dá o XP no back-end
+        final response = await http.patch(
+          Uri.parse('$baseUrl/missoes/$missaoId/concluir'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: jsonEncode({'userId': userId}),
+        );
+        if (response.statusCode != 200 && response.statusCode != 201) {
+          throw Exception('Falha ao concluir missão: Status ${response.statusCode} | Resposta: ${response.body}');
+        }
+
+        // --- ATUALIZAÇÃO DE ATRIBUTO PELO FRONT-END ---
+        String? atributoTag;
+        if (tags != null && tags.isNotEmpty) {
+          String tagStr = tags.first.toLowerCase();
+          if (tagStr.contains('for')) atributoTag = 'forca';
+          else if (tagStr.contains('int')) atributoTag = 'intelecto';
+          else if (tagStr.contains('con')) atributoTag = 'consistencia';
+        }
+
+        bool ganhouCoragem = prioridade != null && prioridade.toUpperCase() == 'ALTA';
+
+        final heroResp = await http.get(
+          Uri.parse('$baseUrl/heroi?userId=$userId'),
+          headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
+        );
+        
+        if (heroResp.statusCode == 200) {
+          final heroData = jsonDecode(heroResp.body);
+          Map<String, dynamic> updateData = {'userId': userId};
+          
+          // 1. Atributo principal da Missão
+          if (atributoTag != null) {
+            updateData[atributoTag] = (heroData[atributoTag] ?? 0) + 1;
+          }
+          
+          // 2. Passiva de Coragem (salvo como 'disciplina' no banco)
+          if (ganhouCoragem) updateData['disciplina'] = (heroData['disciplina'] ?? 0) + 1;
+
+          // 3. Passiva de Consistência (1x por dia)
+          final hoje = DateTime.now().toIso8601String().substring(0, 10); // Pega apenas AAAA-MM-DD
+          final ultimaConsistencia = prefs.getString('ultima_consistencia_$userId');
+          
+          if (ultimaConsistencia != hoje) {
+            ganhouConsistencia = true;
+            updateData['consistencia'] = (heroData['consistencia'] ?? 0) + 1;
+          }
+
+          if (updateData.length > 1) {
+            // Envia as atualizações juntas para a API
+            final patchResp = await http.patch(
+              Uri.parse('$baseUrl/heroi'),
+              headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
+              body: jsonEncode(updateData),
+            );
+
+            if ((patchResp.statusCode == 200 || patchResp.statusCode == 204) && ganhouConsistencia) {
+              await prefs.setString('ultima_consistencia_$userId', hoje);
+            }
+          }
+        }
+      } else {
+        // Atualiza a missão no back-end
+        final response = await http.patch(
+          Uri.parse('$baseUrl/missoes/$missaoId'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: jsonEncode({'userId': userId, 'concluida': concluida}),
+        );
+        if (response.statusCode != 200 && response.statusCode != 204) {
+          throw Exception('Falha ao atualizar missão: Status ${response.statusCode} | Resposta: ${response.body}');
+        }
       }
-
-      final response = await http.put(
-        Uri.parse('$baseUrl/tarefas/$missaoId'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({
-          'sessoesConcluidas': sessoesConcluidas,
-          'concluida': concluida,
-          if (atributoGanho != null) 'atributoGanho': atributoGanho, // Envia o bônus para a API
-        }),
-      );
-
-      if (response.statusCode != 200 && response.statusCode != 204) {
-        throw Exception('Falha ao atualizar progresso da missão: ${response.statusCode}');
-      }
+      return ganhouConsistencia;
     } catch (e) {
       rethrow;
     }
   }
 
-  static Future<void> salvarSessaoHiperfoco(int duracaoMinutos, {int xpBonus = 0}) async {
+  static Future<void> salvarSessaoHiperfoco(int duracaoMinutos, {int xpBonus = 0, bool sessaoCompleta = false}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('jwt_token') ?? '';
+      final userId = prefs.getString('user_id') ?? '';
 
-      // Como o XP pertence ao Usuário, enviamos para a API de Autenticação!
-      const authApiUrl = 'https://api-autenticacao-production.up.railway.app';
-
-      final response = await http.post(
-        Uri.parse('$authApiUrl/hiperfoco/sessao'),
+      var response = await http.post(
+        // Aponta para a API Geral, na rota exata que você criou no seu Node.js
+        Uri.parse('$baseUrl/hiperfoco/sessao'), 
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -111,8 +172,48 @@ class MissaoService {
         }),
       );
 
+      // Se a API retornar 404 porque o usuário ainda não tem um HeroPerfil no banco de dados, criamos um!
+      if (response.statusCode == 404 && response.body.contains('Crie um perfil primeiro')) {
+        debugPrint('Herói não encontrado. Criando perfil automaticamente na API...');
+        final createProfileResponse = await http.post(
+          Uri.parse('$baseUrl/heroi'),
+          headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
+          body: jsonEncode({'userId': userId}),
+        );
+
+        if (createProfileResponse.statusCode == 201 || createProfileResponse.statusCode == 200) {
+          debugPrint('Perfil criado! Retentando salvar a sessão de foco...');
+          // Tenta salvar a sessão novamente
+          response = await http.post(
+            Uri.parse('$baseUrl/hiperfoco/sessao'), 
+            headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
+            body: jsonEncode({'duracaoMinutos': duracaoMinutos, 'xpBonus': xpBonus}),
+          );
+        }
+      }
+
       if (response.statusCode != 200 && response.statusCode != 201) {
-        throw Exception('Falha ao salvar sessão de foco: ${response.statusCode}');
+        throw Exception('Falha ao salvar sessão: Status ${response.statusCode} | Resposta: ${response.body}');
+      }
+
+      // Se for uma sessão completa, garante o +1 de Foco
+      if (sessaoCompleta) {
+        try {
+          final heroResp = await http.get(
+            Uri.parse('$baseUrl/heroi?userId=$userId'),
+            headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
+          );
+          if (heroResp.statusCode == 200) {
+            final heroData = jsonDecode(heroResp.body);
+            await http.patch(
+              Uri.parse('$baseUrl/heroi'),
+              headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
+              body: jsonEncode({'userId': userId, 'foco': (heroData['foco'] ?? 0) + 1}),
+            );
+          }
+        } catch (e) {
+          debugPrint('Erro ao atualizar foco da sessão: $e');
+        }
       }
     } catch (e) {
       rethrow;

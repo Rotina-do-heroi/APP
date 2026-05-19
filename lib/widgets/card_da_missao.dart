@@ -262,8 +262,6 @@ class _CardDaMissaoState extends State<CardDaMissao> {
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        _buildBotaoAtributo('Foco', Icons.my_location, const Color(0xFF6B4EFF), setState, isDark),
-                        _buildBotaoAtributo('Disciplina', Icons.assignment_turned_in, Colors.orangeAccent, setState, isDark),
                         _buildBotaoAtributo('Intelecto', Icons.psychology, Colors.blueAccent, setState, isDark),
                         _buildBotaoAtributo('Força', Icons.fitness_center, const Color(0xFF4ADE80), setState, isDark),
                       ],

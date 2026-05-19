@@ -39,25 +39,65 @@ class _TelaInicialTarefasState extends State<TelaInicialTarefas> {
     }
   }
 
-  Future<void> _deletarMissao(Missao missao) async {
-    // Remove a missão da lista local instantaneamente (Optimistic Update)
-    final listaAtualizada = List<Missao>.from(missoesNotifier.value);
-    listaAtualizada.remove(missao);
-    missoesNotifier.value = listaAtualizada;
+  void _deletarMissao(Missao missao) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: isDark ? const Color(0xFF1E1E2A) : Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              const Icon(Icons.delete_outline, color: Colors.redAccent),
+              const SizedBox(width: 8),
+              Text('Excluir Missão', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
+            ],
+          ),
+          content: Text(
+            'Tem certeza que deseja excluir a missão "${missao.titulo}"?\n\nEsta ação não pode ser desfeita.',
+            style: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.of(dialogContext).pop();
+                
+                // Remove a missão da lista local instantaneamente
+                final listaAtualizada = List<Missao>.from(missoesNotifier.value);
+                listaAtualizada.remove(missao);
+                missoesNotifier.value = listaAtualizada;
 
-    // Se a missão estava selecionada no timer do Foco Rápido, remove a seleção
-    if (missaoSelecionadaNotifier.value == missao) {
-      missaoSelecionadaNotifier.value = null;
-    }
+                if (missaoSelecionadaNotifier.value == missao) {
+                  missaoSelecionadaNotifier.value = null;
+                }
 
-    // Deleta do banco de dados (API)
-    if (missao.id != null) {
-      try {
-        await MissaoService.deletarMissao(missao.id!);
-      } catch (e) {
-        debugPrint('Erro ao deletar na API: $e');
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Missão excluída com sucesso!'), backgroundColor: Colors.redAccent),
+                  );
+                }
+
+                // Deleta do banco de dados (API)
+                if (missao.id != null) {
+                  try {
+                    await MissaoService.deletarMissao(missao.id!);
+                  } catch (e) {
+                    debugPrint('Erro ao deletar na API: $e');
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+              child: const Text('Excluir', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
       }
-    }
+    );
   }
 
   @override
@@ -119,7 +159,11 @@ class _TelaInicialTarefasState extends State<TelaInicialTarefas> {
                                 // Atualiza a API para computar o XP de verdade!
                                 if (updated.id != null) {
                                   await MissaoService.atualizarProgressoMissao(
-                                    updated.id!, updated.sessoesConcluidas, updated.concluida, tags: updated.tags
+                                    updated.id!, 
+                                    updated.sessoesConcluidas, 
+                                    updated.concluida, 
+                                    tags: updated.tags,
+                                    prioridade: updated.prioridade,
                                   );
                                   if (mounted) await sincronizarProgresso(context); // Chama o XP Global
                                 }

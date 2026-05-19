@@ -18,14 +18,14 @@ class TelaPerfil extends StatefulWidget {
 
 class _TelaPerfilState extends State<TelaPerfil> {
   // Inventário
-  // 'id' único para identificar, 'nome' do item, 'icone', e se foi 'desbloqueado'
+  // 'id' único para identificar, 'nome' do item, 'icone', e 'nivelMinimo' exigido
   final List<Map<String, dynamic>> _inventario = [
-    {'id': 0, 'nome': 'Sem armadura', 'icone': Icons.accessibility_new, 'desbloqueado': true},
-    {'id': 1, 'nome': 'Set de Couro', 'icone': Icons.security, 'desbloqueado': false},
-    {'id': 2, 'nome': 'Set de Ferro', 'icone': Icons.shield, 'desbloqueado': false},
-    {'id': 3, 'nome': 'Set de Ouro', 'icone': Icons.workspace_premium, 'desbloqueado': false},
-    {'id': 4, 'nome': 'Set de Diamante', 'icone': Icons.diamond, 'desbloqueado': false},
-    {'id': 5, 'nome': 'Set de Netherite', 'icone': Icons.military_tech, 'desbloqueado': false},
+    {'id': 0, 'nome': 'Sem armadura', 'icone': Icons.accessibility_new, 'nivelMinimo': 1},
+    {'id': 1, 'nome': 'Set de Couro', 'icone': Icons.security, 'nivelMinimo': 10},
+    {'id': 2, 'nome': 'Set de Ferro', 'icone': Icons.shield, 'nivelMinimo': 25},
+    {'id': 3, 'nome': 'Set de Ouro', 'icone': Icons.workspace_premium, 'nivelMinimo': 50},
+    {'id': 4, 'nome': 'Set de Diamante', 'icone': Icons.diamond, 'nivelMinimo': 75},
+    {'id': 5, 'nome': 'Set de Netherite', 'icone': Icons.military_tech, 'nivelMinimo': 100},
   ];
 
   int _itemEquipadoId = 0;
@@ -261,16 +261,6 @@ class _TelaPerfilState extends State<TelaPerfil> {
         _intSt = estatisticas['intelecto'];
         _forSt = estatisticas['forca'];
         _conSt = estatisticas['consistencia'];
-
-        // Fallback de segurança vazio caso a API retorne null no primeiro login
-        List<dynamic> desbloqueados = perfilData['itensDesbloqueados'] ?? [];
-        for (var item in _inventario) {
-          if (item['id'] == 0) {
-            item['desbloqueado'] = true; // Sempre disponível
-          } else {
-            item['desbloqueado'] = desbloqueados.contains(item['id']);
-          }
-        }
 
         _conquistasRecentes = perfilData['conquistasRecentes'];
         _isLoading = false;
@@ -519,7 +509,7 @@ class _TelaPerfilState extends State<TelaPerfil> {
                       children: [
                         _buildEstatistica(icone: Icons.my_location, cor: const Color(0xFF6B4EFF), titulo: 'Foco', valor: _focoSt, isDark: isDark),
                         const SizedBox(width: 12),
-                        _buildEstatistica(icone: Icons.assignment_turned_in, cor: Colors.orangeAccent, titulo: 'Disciplina', valor: _discSt, isDark: isDark),
+                        _buildEstatistica(icone: Icons.local_fire_department, cor: Colors.orangeAccent, titulo: 'Coragem', valor: _discSt, isDark: isDark),
                         const SizedBox(width: 12),
                         _buildEstatistica(icone: Icons.psychology, cor: Colors.blueAccent, titulo: 'Intelecto', valor: _intSt, isDark: isDark),
                       ],
@@ -564,7 +554,7 @@ class _TelaPerfilState extends State<TelaPerfil> {
                   itemBuilder: (context, index) {
                     final item = _inventario[index];
                     bool isEquipado = item['id'] == _itemEquipadoId;
-                    bool isDesbloqueado = item['desbloqueado'];
+                    bool isDesbloqueado = nivelNotifier.value >= item['nivelMinimo'];
 
                     return GestureDetector(
                       onTap: () {
@@ -586,8 +576,8 @@ class _TelaPerfilState extends State<TelaPerfil> {
                         } else {
                           // Feedback caso o item esteja bloqueado
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Este item ainda está bloqueado!'),
+                            SnackBar(
+                              content: Text('Atinja o Nível ${item['nivelMinimo']} para desbloquear esta armadura!'),
                               backgroundColor: Colors.redAccent,
                               duration: Duration(seconds: 2),
                             ),

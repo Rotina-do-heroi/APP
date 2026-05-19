@@ -37,6 +37,7 @@ dependencies:
   http: ^1.6.0
   shared_preferences: ^2.5.5
   tutorial_coach_mark: ^1.3.3
+  wakelock_plus: ^1.6.1
 
 dev_dependencies:
   flutter_test:
