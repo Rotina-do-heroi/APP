@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class MicroPasso {
   String descricao;
   bool concluido;
@@ -36,6 +38,7 @@ class Missao {
   });
 
   factory Missao.fromJson(Map<String, dynamic> json) {
+ 
     return Missao(
       id: json['id']?.toString(),
       titulo: json['titulo'] ?? '',
