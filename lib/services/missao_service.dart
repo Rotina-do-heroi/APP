@@ -129,8 +129,9 @@ class MissaoService {
         String? atributoTag;
         if (tags != null && tags.isNotEmpty) {
           String tagStr = tags.first.toLowerCase();
-          if (tagStr.contains('for')) atributoTag = 'forca';
-          else if (tagStr.contains('int')) atributoTag = 'intelecto';
+          if (tagStr.contains('for')) {
+            atributoTag = 'forca';
+          } else if (tagStr.contains('int')) atributoTag = 'intelecto';
           else if (tagStr.contains('con')) atributoTag = 'consistencia';
         }
 

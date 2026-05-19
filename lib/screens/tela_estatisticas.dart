@@ -487,8 +487,11 @@ class RadarChartPainter extends CustomPainter {
       double raioValor = radius * (valores[i] / maxValue);
       double x = centerX + raioValor * cos(angulo);
       double y = centerY + raioValor * sin(angulo);
-      if (i == 0) pathValor.moveTo(x, y);
-      else pathValor.lineTo(x, y);
+      if (i == 0) {
+        pathValor.moveTo(x, y);
+      } else {
+        pathValor.lineTo(x, y);
+      }
     }
     pathValor.close();
 
