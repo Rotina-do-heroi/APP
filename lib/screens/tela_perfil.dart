@@ -350,20 +350,26 @@ class _TelaPerfilState extends State<TelaPerfil> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Icon(Icons.person_outline, color: corTextoPrincipal, size: 24),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Perfil do Herói',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: corTextoPrincipal,
-                          fontFamily: 'monospace',
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Icon(Icons.person_outline, color: corTextoPrincipal, size: 24),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            'Perfil do Herói',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: corTextoPrincipal,
+                              fontFamily: 'monospace',
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   Row(
                     children: [
@@ -442,12 +448,14 @@ class _TelaPerfilState extends State<TelaPerfil> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                        _nomeUsuario,
+                            _nomeUsuario,
                             style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
                               color: corTextoPrincipal,
                             ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                           ),
                           const SizedBox(height: 4),
                           Text(

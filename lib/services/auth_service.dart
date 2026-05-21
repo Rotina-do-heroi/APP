@@ -77,9 +77,9 @@ class AuthService {
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'email': email}),
     ).timeout(
-      const Duration(seconds: 10),
+      const Duration(seconds: 60), 
       onTimeout: () {
-        throw Exception('Timeout: Servidor não respondeu');
+        throw Exception('Timeout: Servidor não respondeu após 60 segundos');
       },
     );
 

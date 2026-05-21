@@ -74,11 +74,7 @@ class MissaoService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('jwt_token') ?? '';
-<<<<<<< HEAD
       final userId = prefs.getString('user_id') ?? '';
-=======
-      final userId = prefs.getString('user_id');  
->>>>>>> 77a35a334ecf7622f3d158f8c6915efc34b60bde
 
       final response = await http.delete(
         Uri.parse('$baseUrl/missoes/$missaoId'),
@@ -86,13 +82,7 @@ class MissaoService {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-<<<<<<< HEAD
         body: jsonEncode({'userId': userId}),
-=======
-        body: jsonEncode({
-          'userId': userId, 
-        }),
->>>>>>> 77a35a334ecf7622f3d158f8c6915efc34b60bde
       );
 
       if (response.statusCode != 200 && response.statusCode != 204) {
@@ -110,7 +100,6 @@ class MissaoService {
       final token = prefs.getString('jwt_token') ?? '';
       final userId = prefs.getString('user_id') ?? '';
 
-<<<<<<< HEAD
       if (concluida) {
         // Usa a rota específica que conclui a missão e te dá o XP no back-end
         final response = await http.patch(
@@ -189,31 +178,6 @@ class MissaoService {
         if (response.statusCode != 200 && response.statusCode != 204) {
           throw Exception('Falha ao atualizar missão: Status ${response.statusCode} | Resposta: ${response.body}');
         }
-=======
-      String? atributoGanho;
-      if (concluida && tags != null && tags.isNotEmpty) {
-        atributoGanho = tags.first; // Ex: 'Intelecto', 'Força', etc.
-      }
-
-      final userId = prefs.getString('user_id');
-
-      final response = await http.patch(
-        Uri.parse('$baseUrl/missoes/$missaoId'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({
-          'userId': userId,
-          'sessoesConcluidas': sessoesConcluidas,
-          'concluida': concluida,
-          if (atributoGanho != null) 'atributoGanho': atributoGanho, // Envia o bônus para a API
-        }),
-      );
-
-      if (response.statusCode != 200 && response.statusCode != 204) {
-        throw Exception('Falha ao atualizar progresso da missão: ${response.statusCode}');
->>>>>>> 77a35a334ecf7622f3d158f8c6915efc34b60bde
       }
       return ganhouConsistencia;
     } catch (e) {
@@ -227,14 +191,9 @@ class MissaoService {
       final token = prefs.getString('jwt_token') ?? '';
       final userId = prefs.getString('user_id') ?? '';
 
-<<<<<<< HEAD
       var response = await http.post(
         // Aponta para a API Geral, na rota exata que você criou no seu Node.js
         Uri.parse('$baseUrl/hiperfoco/sessao'), 
-=======
-      final response = await http.post(
-        Uri.parse('$baseUrl/hiperfoco/sessao'),
->>>>>>> 77a35a334ecf7622f3d158f8c6915efc34b60bde
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',

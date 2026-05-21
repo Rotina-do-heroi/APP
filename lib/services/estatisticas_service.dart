@@ -2,10 +2,47 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// =====================================================================
+/// PADRÃO SINGLETON - 
+/// =====================================================================
+/// Transformamos o [EstatisticasService] em um Singleton.
+/// O padrão Singleton garante que esta classe tenha apenas UMA ÚNICA 
+/// instância em toda a aplicação, economizando memória e centralizando
+/// o acesso aos dados ou configurações.
+/// =====================================================================
 class EstatisticasService {
-  static String get baseUrl => 'https://api-autenticacao-production.up.railway.app';
+  // ------------------------------------------------------------------
+  // 1. A INSTÂNCIA PRIVADA E ESTÁTICA (O SEGREDO DO SINGLETON)
+  // ------------------------------------------------------------------
+  // Criamos uma variável estática e privada (indicada pelo '_').
+  // Ela guarda a ÚNICA instância que existirá desta classe na memória. 
+  static final EstatisticasService _instancia = EstatisticasService._internal();
 
-  static Future<Map<String, double>> buscarEstatisticas() async {
+  // ------------------------------------------------------------------
+  // 2. O CONSTRUTOR FACTORY PÚBLICO (A PORTA DE ENTRADA)
+  // ------------------------------------------------------------------
+  // Em Dart, usamos a palavra-chave 'factory'. Ela permite que o construtor 
+  // decida o que retornar, em vez de sempre alocar um novo espaço na memória.
+  // Sempre que alguém chamar `EstatisticasService()`, receberá a `_instancia`.
+  factory EstatisticasService() {
+    return _instancia;
+  }
+
+  // ------------------------------------------------------------------
+  // 3. O CONSTRUTOR PRIVADO (A BLINDAGEM)
+  // ------------------------------------------------------------------
+  // Este é um construtor nomeado privado (`._internal`). 
+  // Impede que outros programadores criem novas instâncias acidentalmente.
+  EstatisticasService._internal();
+
+  // ==================================================================
+  // DADOS E MÉTODOS DA INSTÂNCIA (O que o Singleton faz de fato)
+  // ==================================================================
+  // Agora estes métodos pertencem à instância única e não são estáticos.
+  
+  final String baseUrl = 'https://api-autenticacao-production.up.railway.app';
+
+  Future<Map<String, double>> buscarEstatisticas() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('jwt_token') ?? '';

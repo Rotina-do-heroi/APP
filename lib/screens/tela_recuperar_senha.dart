@@ -284,7 +284,7 @@ class _TelaRecuperarSenhaState extends State<TelaRecuperarSenha> {
           ],
         ),
         child: _isLoading
-            ? const SizedBox(height: 24, width: 24, child: Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white), strokeWidth: 2)))
+                ? const Center(child: SizedBox(height: 24, width: 24, child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white), strokeWidth: 2)))
             : Text(texto, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1.5)),
       ),
     );
