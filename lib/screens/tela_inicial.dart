@@ -25,6 +25,9 @@ class TelaInicialTarefas extends StatefulWidget {
 }
 
 class _TelaInicialTarefasState extends State<TelaInicialTarefas> {
+  int _diaSelecionado = DateTime.now().weekday;
+  final List<String> _diasDaSemana = ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB', 'DOM'];
+
   @override
   void initState() {
     super.initState();
@@ -148,23 +151,91 @@ class _TelaInicialTarefasState extends State<TelaInicialTarefas> {
               ],
             ),
             const SizedBox(height: 16),
+            // --- CALENDÁRIO SEMANAL ---
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: List.generate(7, (index) {
+                final dia = index + 1;
+                final isSelected = _diaSelecionado == dia;
+                final hoje = DateTime.now();
+                final isHoje = hoje.weekday == dia;
+                
+                // Calcula a data exata para este dia na semana atual
+                final inicioDaSemana = hoje.subtract(Duration(days: hoje.weekday - 1));
+                final dataDoDia = inicioDaSemana.add(Duration(days: index));
+
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _diaSelecionado = dia;
+                    });
+                  },
+                  child: Container(
+                    width: 46,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: isSelected ? const Color(0xFF6B4EFF) : (isDark ? const Color(0xFF252536) : Colors.grey.shade200),
+                      borderRadius: BorderRadius.circular(12),
+                      border: isHoje && !isSelected ? Border.all(color: const Color(0xFF6B4EFF), width: 1.5) : null,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          _diasDaSemana[index],
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: isSelected ? Colors.white.withOpacity(0.8) : (isDark ? Colors.white54 : Colors.black54),
+                            fontWeight: FontWeight.normal,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${dataDoDia.day}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: isSelected ? Colors.white : (isDark ? Colors.white : Colors.black87),
+                            fontWeight: isSelected || isHoje ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ),
+            const SizedBox(height: 16),
             Expanded(
               child: ValueListenableBuilder<List<Missao>>(
                 valueListenable: missoesNotifier,
                 builder: (context, missoesAtuais, _) {
+                  
+                  final missoesDoDia = missoesAtuais.where((missao) {
+                    final bool isRecurring = missao.diasRepeticao.isNotEmpty;
+
+                    if (!isRecurring) {
+                      // Mostrar missões únicas apenas no dia de "Hoje"
+                      return _diaSelecionado == DateTime.now().weekday;
+                    }
+                    // Se a missão FOR recorrente, ela deve aparecer se o dia selecionado corresponder.
+                    return missao.diasRepeticao.contains(_diaSelecionado);
+                  }).toList();
+
                   return SingleChildScrollView(
                     child: Column(
-                      children: missoesAtuais.isEmpty
+                      children: missoesDoDia.isEmpty
                           ? [
-                              const Padding(
-                                padding: EdgeInsets.only(top: 16.0),
+                              Padding(
+                                padding: const EdgeInsets.only(top: 16.0),
                                 child: Text(
-                                  'Nenhuma missão criada ainda. Clique em Nova missão para adicionar.',
-                                  style: TextStyle(color: Colors.grey),
+                                  _diaSelecionado == DateTime.now().weekday
+                                      ? 'Nenhuma missão para hoje. Aproveite o descanso ou crie uma nova!'
+                                      : 'Nenhuma missão agendada para este dia.',
+                                  style: const TextStyle(color: Colors.grey),
                                 ),
                               ),
                             ]
-                          : missoesAtuais
+                          : missoesDoDia
                               .map(
                                 (missao) => MissionCard(
                                   missao: missao,
@@ -188,6 +259,12 @@ class _TelaInicialTarefasState extends State<TelaInicialTarefas> {
                                     if (missao.concluida) {
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         const SnackBar(content: Text('Esta missão já foi concluída!'), backgroundColor: Colors.orange),
+                                      );
+                                      return;
+                                    }
+                                    if (_diaSelecionado != DateTime.now().weekday) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Você só pode iniciar o foco nas missões de hoje!'), backgroundColor: Colors.orange),
                                       );
                                       return;
                                     }

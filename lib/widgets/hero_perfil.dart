@@ -58,6 +58,10 @@ class _HeroPerfilState extends State<HeroPerfil> {
     final Color corFundoAvatar = isDark ? const Color(0xFF1E1E2A) : Colors.white;
     final Color corBordaAvatar = isDark ? const Color(0xFF2E2E40) : Colors.grey.shade300;
 
+    // Responsividade: verifica se a tela é menor que 600px
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final bool isMobile = screenWidth < 600;
+
     return AnimatedBuilder(
       animation: Listenable.merge([xpNotifier, nivelNotifier]),
       builder: (context, _) {
@@ -67,6 +71,46 @@ class _HeroPerfilState extends State<HeroPerfil> {
         final int xpNaBarra = xpAtual % 100;
         final int xpTotalDoNivel = 100;
         final double progressoXp = xpNaBarra / xpTotalDoNivel;
+
+        // Instancia os botões previamente para que possam ser usados tanto em Row quanto em Column
+        final Widget btnInventario = _buildBotaoAcao(
+          icone: Icons.inventory_2_outlined,
+          corFundo: isDark ? const Color(0xFF2A2A1A) : Colors.amber.shade100, // Fundo escurecido
+          corIcone: const Color(0xFFFFB800), // Ícone amarelo
+          corBorda: isDark ? const Color.fromRGBO(255, 184, 0, 0.4) : Colors.amber,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const TelaInventario()),
+            );
+          },
+        );
+
+        final Widget btnAjuda = _buildBotaoAcao(
+          icone: Icons.help_outline,
+          corFundo: isDark ? const Color(0xFF1E1E2A) : Colors.white,
+          corIcone: isDark ? Colors.blueAccent : Colors.blue,
+          corBorda: isDark ? const Color(0xFF2E2E40) : Colors.grey.shade300,
+          onTap: () {
+            showAppTutorial(context); // Chama o tutorial novamente!
+          },
+        );
+
+        final Widget btnTema = ValueListenableBuilder<ThemeMode>(
+          valueListenable: temaNotifier,
+          builder: (context, modoAtual, child) {
+            final bool isDarkTema = modoAtual == ThemeMode.dark;
+            return _buildBotaoAcao(
+              icone: isDarkTema ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+              corFundo: isDarkTema ? const Color(0xFF1E1E2A) : Colors.white,
+              corIcone: isDarkTema ? Colors.grey : Colors.black87,
+              corBorda: isDarkTema ? const Color(0xFF2E2E40) : Colors.grey.shade300,
+              onTap: () {
+                temaNotifier.value = isDarkTema ? ThemeMode.light : ThemeMode.dark;
+              },
+            );
+          },
+        );
 
         return Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -134,7 +178,7 @@ class _HeroPerfilState extends State<HeroPerfil> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Flexible(
+                  Expanded(
                     child: Text(
                       _nome,
                       style: TextStyle(
@@ -215,48 +259,27 @@ class _HeroPerfilState extends State<HeroPerfil> {
         const SizedBox(width: 16),
 
         // 3. Botões de Ação Laterais
-        Row(
-          children: [
-            _buildBotaoAcao(
-              icone: Icons.inventory_2_outlined,
-              corFundo: isDark ? const Color(0xFF2A2A1A) : Colors.amber.shade100, // Fundo escurecido
-              corIcone: const Color(0xFFFFB800), // Ícone amarelo
-              corBorda: isDark ? const Color.fromRGBO(255, 184, 0, 0.4) : Colors.amber,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const TelaInventario()),
-                );
-              },
-            ),
-            const SizedBox(width: 8),
-            _buildBotaoAcao(
-              icone: Icons.help_outline,
-              corFundo: isDark ? const Color(0xFF1E1E2A) : Colors.white,
-              corIcone: isDark ? Colors.blueAccent : Colors.blue,
-              corBorda: isDark ? const Color(0xFF2E2E40) : Colors.grey.shade300,
-              onTap: () {
-                showAppTutorial(context); // Chama o tutorial novamente!
-              },
-            ),
-            const SizedBox(width: 8),
-            ValueListenableBuilder<ThemeMode>(
-              valueListenable: temaNotifier,
-              builder: (context, modoAtual, child) {
-                final bool isDarkTema = modoAtual == ThemeMode.dark;
-                return _buildBotaoAcao(
-                  icone: isDarkTema ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
-                  corFundo: isDarkTema ? const Color(0xFF1E1E2A) : Colors.white,
-                  corIcone: isDarkTema ? Colors.grey : Colors.black87,
-                  corBorda: isDarkTema ? const Color(0xFF2E2E40) : Colors.grey.shade300,
-                  onTap: () {
-                    temaNotifier.value = isDarkTema ? ThemeMode.light : ThemeMode.dark;
-                  },
-                );
-              },
-            ),
-          ],
-        ),
+        isMobile
+            ? Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  btnInventario,
+                  const SizedBox(height: 8),
+                  btnAjuda,
+                  const SizedBox(height: 8),
+                  btnTema,
+                ],
+              )
+            : Row(
+                children: [
+                  btnInventario,
+                  const SizedBox(width: 8),
+                  btnAjuda,
+                  const SizedBox(width: 8),
+                  btnTema,
+                ],
+              ),
       ],
     );
       },

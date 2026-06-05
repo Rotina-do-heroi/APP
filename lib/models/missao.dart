@@ -23,6 +23,7 @@ class Missao {
   bool concluida;
   int sessoesNecessarias;
   int sessoesConcluidas;
+  List<int> diasRepeticao;
 
   Missao({
     this.id,
@@ -34,6 +35,7 @@ class Missao {
     this.concluida = false,
     this.sessoesNecessarias = 1,
     this.sessoesConcluidas = 0,
+    this.diasRepeticao = const [],
   });
 
   factory Missao.fromJson(Map<String, dynamic> json) {
@@ -51,6 +53,7 @@ class Missao {
       concluida: json['concluida'] ?? false,
       sessoesNecessarias: json['sessoesNecessarias'] ?? 1,
       sessoesConcluidas: json['sessoesConcluidas'] ?? 0,
+      diasRepeticao: json['diasRepeticao'] != null ? List<int>.from(json['diasRepeticao']) : [],
     );
   }
 }

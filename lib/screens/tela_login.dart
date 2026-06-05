@@ -169,7 +169,7 @@ class _TelaLoginState extends State<TelaLogin> {
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF6B4EFF).withValues(alpha: 0.4),
+                          color: const Color(0xFF6B4EFF).withOpacity(0.4),
                           blurRadius: 12,
                           spreadRadius: 2,
                         ),

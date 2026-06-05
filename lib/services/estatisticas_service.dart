@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// =====================================================================
 /// PADRÃO SINGLETON - 
@@ -40,7 +41,7 @@ class EstatisticasService {
   // ==================================================================
   // Agora estes métodos pertencem à instância única e não são estáticos.
   
-  final String baseUrl = 'https://api-autenticacao-production.up.railway.app';
+  String get baseUrl => dotenv.env['AUTH_API_URL'] ?? '';
 
   Future<Map<String, double>> buscarEstatisticas() async {
     try {

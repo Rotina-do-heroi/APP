@@ -3,9 +3,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/missao.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class MissaoService {
-  static const baseUrl = 'https://api-geral-production.up.railway.app';
+  static String get baseUrl => dotenv.env['GERAL_API_URL'] ?? '';
 
   static Future<List<Missao>> obterMissoes() async {
     try {
@@ -56,6 +57,7 @@ class MissaoService {
           'prioridade': missao.prioridade.toUpperCase(),
           'sessoesNecessarias': missao.sessoesNecessarias,
           'sessoesConcluidas': missao.sessoesConcluidas,
+          'diasRepeticao': missao.diasRepeticao,
         }),
       );
       if (response.statusCode == 200 || response.statusCode == 201) {

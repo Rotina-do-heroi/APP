@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/missao.dart';
+import 'seletor_dias_semana.dart';
+
 
 class CardDaMissao extends StatefulWidget {
   final ValueChanged<Missao> onCriarMissao;
@@ -21,6 +23,7 @@ class _CardDaMissaoState extends State<CardDaMissao> {
   String? _prioridadeSelecionada;
   String? _atributoSelecionado;
   int _sessoesNecessarias = 1;
+  List<int> _diasRepeticao = [];
 
   @override
   void dispose() {
@@ -44,6 +47,7 @@ class _CardDaMissaoState extends State<CardDaMissao> {
     _prioridadeSelecionada = null;
     _atributoSelecionado = null;
     _sessoesNecessarias = 1;
+    _diasRepeticao = [];
   }
 
   void _abrirDialogoNovaMissao() {
@@ -299,6 +303,15 @@ class _CardDaMissaoState extends State<CardDaMissao> {
                       ],
                     ),
                     const SizedBox(height: 16),
+                    SeletorDiasSemana(
+                      diasSelecionadosInicial: _diasRepeticao,
+                      onSelectionChanged: (dias) {
+                        setState(() {
+                          _diasRepeticao = dias;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
                     Text(
                       'Micro-passos',
                       style: TextStyle(
@@ -430,7 +443,9 @@ class _CardDaMissaoState extends State<CardDaMissao> {
                         prioridade: _prioridadeSelecionada ?? 'baixa',
                         microPassos: microPassos,
                         sessoesNecessarias: _sessoesNecessarias,
+                        diasRepeticao: _diasRepeticao,
                       );
+                      debugPrint('Enviando missão com dias repetidos: ${missao.diasRepeticao}');
                       widget.onCriarMissao(missao);
                       _limparCamposDialogo();
                       Navigator.of(context).pop();
@@ -479,7 +494,7 @@ class _CardDaMissaoState extends State<CardDaMissao> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelecionado ? cor.withValues(alpha: 0.2) : corFundoInput,
+          color: isSelecionado ? cor.withOpacity(0.2) : corFundoInput,
           border: Border.all(
             color: isSelecionado ? cor : corBordaInput,
             width: 2,

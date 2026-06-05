@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'screens/tela_inicial.dart';
 import 'screens/tela_hiperfoco.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/tela_login.dart';
 import 'screens/tela_perfil.dart';
 import 'screens/tela_estatisticas.dart';
@@ -193,7 +194,9 @@ Future<bool> verificarLoginAtivo() async {
   return token != null && token.isNotEmpty;
 }
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
   runApp(const AppRotina());
 }
 

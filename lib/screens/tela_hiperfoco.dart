@@ -1,13 +1,13 @@
-// Arquivo: lib/screens/tela_hiperfoco.dart
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:async'; // <-- IMPORTANTE: Biblioteca para usar o Timer
-import 'package:wakelock_plus/wakelock_plus.dart'; // Para manter a tela ligada
-import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import '../models/missao.dart';
-import 'tela_inicial.dart'; // Importa missoesNotifier
-import '../services/missao_service.dart';
-import '../main.dart'; // Importa sincronizarProgresso
+import 'tela_inicial.dart';
+import '../main.dart';
+import '../controllers/hiperfoco_controller.dart';
+import '../widgets/aba_modo_widget.dart';
+import '../widgets/tarefa_card_widget.dart';
+import 'hiperfoco_dialogs.dart';
+import 'hiperfoco_tutorial.dart';
 
 class TelaHiperfoco extends StatefulWidget {
   const TelaHiperfoco({super.key});
@@ -17,45 +17,46 @@ class TelaHiperfoco extends StatefulWidget {
 }
 
 class _TelaHiperfocoState extends State<TelaHiperfoco> {
-  // 0 = Foco, 1 = Pausa Curta, 2 = Pausa Longa
-  int _modoAtual = 0; 
-  bool _isRodando = false;
-  int _comboAtual = 0; // Contador de Ofensivas (Streaks)
+  late HiperfocoController _controller;
 
-  // Variáveis do Cronômetro - Agora uma para cada modo
-  Timer? _timer;
-  // [Foco, Pausa Curta, Pausa Longa]
-  late final List<int> _temposPadrao;
-  late List<int> _segundosRestantesPorModo;
-  
-  // Chaves para o Tutorial
   final GlobalKey _keyAbas = GlobalKey();
   final GlobalKey _keyTimer = GlobalKey();
   final GlobalKey _keyControles = GlobalKey();
 
-  // Limpa o timer da memória quando a tela for fechada (Boa prática de performance)
-  @override
-  void dispose() {
-    _timer?.cancel();
-    WakelockPlus.disable(); // Garante que a tela volte ao normal se ele fechar a aba
-    super.dispose();
-  }
-
   @override
   void initState() {
     super.initState();
-    // NOVO: Inicializa os tempos para cada modo
-    _temposPadrao = [25 * 60, 5 * 60, 15 * 60];
-    _segundosRestantesPorModo = List.from(_temposPadrao);
+    _controller = HiperfocoController(
+      onShowSnackbar: (message, isSuccess) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message), backgroundColor: isSuccess ? Colors.green : Colors.orangeAccent),
+        );
+      },
+      onMissaoConcluida: (missao, ganhouConsistencia) {
+        if (!mounted) return;
+        HiperfocoDialogs.mostrarParabens(context, missao, ganhouConsistencia);
+      },
+      onSincronizarProgresso: () async {
+        if (!mounted) return;
+        await sincronizarProgresso(context);
+      },
+      onShowConfirmacaoAntecipada: (quintos, xpPeloTempo, xpGanho, xpTotal, onConfirm) {
+        if (!mounted) return;
+        HiperfocoDialogs.confirmarConclusaoAntecipada(
+          context: context, quintosCompletados: quintos, xpPeloTempo: xpPeloTempo, xpGanho: xpGanho, xpTotalPrevisto: xpTotal, onConfirm: onConfirm,
+        );
+      },
+    );
 
-    // Verifica se o usuário veio do botão de Foco Rápido
-    if (autoStartTimerNotifier.value) {
-      autoStartTimerNotifier.value = false;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _iniciarPausarTimer(); // Dá play automático no timer
-      });
-    }
+    _controller.init();
     _verificarTutorial();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose(); // Delega a limpeza do Timer e Observers para a própria classe de controle
+    super.dispose();
   }
 
   Future<void> _verificarTutorial() async {
@@ -68,477 +69,10 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
     if (primeiroAcesso) {
       Future.delayed(const Duration(milliseconds: 800), () {
         if (!mounted) return;
-        _showHiperfocoTutorial(context);
+        HiperfocoTutorial.showTutorial(context, keyAbas: _keyAbas, keyTimer: _keyTimer, keyControles: _keyControles);
       });
-      // Salva que o usuário já viu o tutorial dessa tela
       await prefs.setBool(chaveTutorial, false);
     }
-  }
-
-  void _showHiperfocoTutorial(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    TutorialCoachMark(
-      targets: [
-        TargetFocus(
-          identify: "abas",
-          keyTarget: _keyAbas,
-          contents: [
-            TargetContent(
-              align: ContentAlign.bottom,
-              builder: (context, controller) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  final contexto = _keyAbas.currentContext;
-                  if (contexto != null) {
-                    Scrollable.ensureVisible(contexto,
-                        duration: const Duration(milliseconds: 300), alignment: 0.5);
-                  }
-                });
-                return Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF252536) : Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFF6B4EFF), width: 2),
-                    boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Modos de Tempo ⏳", style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 22, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 10),
-                      Text("Alterne entre Foco, Pausa Curta e Pausa Longa. O cronômetro ajusta automaticamente.", style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 16)),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-        TargetFocus(
-          identify: "timer",
-          keyTarget: _keyTimer,
-          contents: [
-            TargetContent(
-              align: ContentAlign.bottom,
-              builder: (context, controller) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  final contexto = _keyTimer.currentContext;
-                  if (contexto != null) {
-                    Scrollable.ensureVisible(contexto,
-                        duration: const Duration(milliseconds: 300), alignment: 0.5);
-                  }
-                });
-                return Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF252536) : Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFF6B4EFF), width: 2),
-                    boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Cronômetro ⏱️", style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 22, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 10),
-                      Text("Acompanhe seu tempo aqui. Cumpra o foco até o relógio zerar para computar a sessão e ganhar XP!", style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 16)),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-        TargetFocus(
-          identify: "controles",
-          keyTarget: _keyControles,
-          contents: [
-            TargetContent(
-              align: ContentAlign.top,
-              builder: (context, controller) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  final contexto = _keyControles.currentContext;
-                  if (contexto != null) {
-                    Scrollable.ensureVisible(contexto,
-                        duration: const Duration(milliseconds: 300), alignment: 0.5);
-                  }
-                });
-                return Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF252536) : Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFF6B4EFF), width: 2),
-                    boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Controles ⏯️", style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 22, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 10),
-                      Text("Inicie ou pause sua sessão. Você também pode resetar caso se perca, ou pular de fase se terminar rápido.", style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 16)),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ],
-      colorShadow: Colors.black,
-      textSkip: "PULAR TUTORIAL",
-      textStyleSkip: const TextStyle(
-        color: Colors.white,
-        fontWeight: FontWeight.bold,
-        fontFamily: 'monospace',
-        letterSpacing: 1.5,
-      ),
-      paddingFocus: 10,
-      opacityShadow: 0.85,
-    ).show(context: context);
-  }
-
-  // --- LÓGICA DO CRONÔMETRO ---
-
-  void _iniciarPausarTimer() {
-    if (_isRodando) {
-      // Se está rodando, vamos PAUSAR
-      _timer?.cancel();
-      WakelockPlus.disable(); // Tela pode apagar novamente
-      setState(() {
-        _isRodando = false;
-      });
-    } else {
-      // Bloqueia o início do timer de Foco se nenhuma missão estiver selecionada
-      if (_modoAtual == 0 && missaoSelecionadaNotifier.value == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Selecione uma tarefa na lista abaixo para focar! 🎯'),
-            backgroundColor: Colors.orangeAccent,
-          ),
-        );
-        return; // Interrompe a função, impedindo o timer de iniciar
-      }
-
-      // Se está pausado, vamos INICIAR
-      WakelockPlus.enable(); // Mantém a tela acesa enquanto foca!
-      setState(() {
-        _isRodando = true;
-      });
-      // O Timer roda esse bloco de código a cada 1 segundo
-      _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        setState(() {
-          if (_segundosRestantesPorModo[_modoAtual] > 0) {
-            _segundosRestantesPorModo[_modoAtual]--; // Diminui 1 segundo
-          } else {
-            // O tempo acabou!
-            _timer?.cancel();
-            WakelockPlus.disable(); // Tela pode apagar novamente
-            
-            setState(() {
-              _isRodando = false;
-              if (_modoAtual == 0) {
-                if (_comboAtual < 3) _comboAtual++; // Aumenta o combo até o máximo de 3
-              }
-            });
-            
-            if (_modoAtual == 0) {
-              _salvarSessaoFoco(); // Salva a sessão de estudo no back-end
-              _processarFimDeSessaoDaMissao();
-            }
-          }
-        });
-      });
-    }
-  }
-
-  Future<void> _processarFimDeSessaoDaMissao() async {
-    if (missaoSelecionadaNotifier.value != null && !missaoSelecionadaNotifier.value!.concluida) {
-      final missao = missaoSelecionadaNotifier.value!;
-      missao.sessoesConcluidas++;
-      
-      bool recemConcluida = false;
-      bool ganhouConsistencia = false;
-
-      if (missao.sessoesConcluidas >= missao.sessoesNecessarias) {
-        missao.concluida = true;
-        recemConcluida = true;
-        missaoSelecionadaNotifier.value = null; // Tira a seleção
-      }
-      
-      // Atualiza a lista globalmente para refletir na tela inicial
-      missoesNotifier.value = List.from(missoesNotifier.value);
-
-      // --- ATUALIZA O PROGRESSO NO BANCO DE DADOS (API) ---
-      if (missao.id != null) {
-        try {
-          ganhouConsistencia = await MissaoService.atualizarProgressoMissao(
-            missao.id!,
-            missao.sessoesConcluidas,
-            missao.concluida,
-            tags: missao.tags,
-            prioridade: missao.prioridade,
-          );
-        } catch (e) {
-          debugPrint('Erro ao atualizar progresso na API: $e');
-        }
-          
-        if (mounted) await sincronizarProgresso(context); // Sincroniza e checa Level Up
-      }
-
-      if (recemConcluida && mounted) {
-        _mostrarParabens(missao, ganhouConsistencia);
-      }
-    }
-  }
-
-  void _mostrarParabens(Missao missao, bool ganhouConsistencia) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1E2A) : Colors.white,
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.workspace_premium, color: Colors.amber, size: 80),
-                const SizedBox(height: 16),
-                const Text(
-                  'MISSÃO CONCLUÍDA!',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.amber),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  missao.titulo,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black87),
-                ),
-                const SizedBox(height: 16),
-                Builder(
-                  builder: (context) {
-                    List<String> recompensas = ['XP'];
-                    if (missao.tags.isNotEmpty) recompensas.add('+1 ${missao.tags.first}');
-                    if (missao.prioridade.toUpperCase() == 'ALTA') recompensas.add('+1 Coragem');
-                    if (ganhouConsistencia) recompensas.add('+1 Consistência');
-                    
-                    String textoRecompensas;
-                    if (recompensas.length > 1) {
-                      final ultimos = recompensas.removeLast();
-                      textoRecompensas = 'Recompensas: ${recompensas.join(', ')} e $ultimos!';
-                    } else {
-                      textoRecompensas = 'Recompensas: ${recompensas.first}!';
-                    }
-                    
-                    return Text(
-                      textoRecompensas,
-                      textAlign: TextAlign.center, 
-                      style: const TextStyle(color: Colors.grey, height: 1.5),
-                    );
-                  }
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6B4EFF), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12)),
-                  child: const Text('Continuar', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                )
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> _salvarSessaoFoco() async {
-    try {
-      int bonusXp = _calcularBonusCombo();
-      // O tempo do ciclo principal de hiperfoco é 25 minutos
-      await MissaoService.salvarSessaoHiperfoco(25, xpBonus: bonusXp, sessaoCompleta: true);
-      
-      if (!mounted) return;
-      
-      int xpTotal = (25 * 10) + bonusXp; // O Back-end dá 10 XP por minuto
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('+$xpTotal XP e +1 Foco! Sessão concluída! ${bonusXp > 0 ? '(+$bonusXp de Bônus)' : ''}'), backgroundColor: Colors.green),
-      );
-      
-      await sincronizarProgresso(context); // Sincroniza o XP e checa Level Up
-    } catch (e) {
-      debugPrint('Erro ao salvar sessão de foco: $e');
-    }
-  }
-
-  void _resetarTimer({bool abortouFoco = false}) {
-    // Se o usuário resetar ou pular o timer ENQUANTO o foco estiver rodando, ele perde a ofensiva
-    if (abortouFoco && _comboAtual > 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ofensiva perdida! Você interrompeu o foco.'), backgroundColor: Colors.orangeAccent),
-      );
-    }
-
-    _timer?.cancel(); // Para o cronômetro
-    WakelockPlus.disable(); // Tela pode apagar novamente
-    setState(() {
-      if (abortouFoco) _comboAtual = 0; // Zera a streak
-      _isRodando = false;
-      // Define o tempo de volta para o padrão da aba selecionada
-      _segundosRestantesPorModo[_modoAtual] = _temposPadrao[_modoAtual];
-    });
-  }
-
-  void _confirmarConclusaoAntecipada() {
-    // Tempo total da sessão de Foco (25 minutos = 1500 segundos)
-    int tempoTotal = 25 * 60;
-    int tempoDecorrido = tempoTotal - _segundosRestantesPorModo[_modoAtual];
-    
-    // Cada 1/5 do tempo equivale a 300 segundos (5 minutos)
-    int fracaoTempo = tempoTotal ~/ 5; 
-    int quintosCompletados = tempoDecorrido ~/ fracaoTempo;
-    
-    // Define o valor total da prioridade (Padrão = 10 para Baixa/Sem missão selecionada)
-    int xpBasePrioridade = 10; 
-    if (missaoSelecionadaNotifier.value != null) {
-      String prio = missaoSelecionadaNotifier.value!.prioridade.toLowerCase();
-      if (prio == 'alta') {
-        xpBasePrioridade = 30;
-      } else if (prio == 'media') xpBasePrioridade = 20;
-      else if (prio == 'baixa') xpBasePrioridade = 10;
-    }
-    
-    // XP ganho é 1/5 do xpBasePrioridade para cada 1/5 de tempo completado
-    int xpGanho = quintosCompletados * (xpBasePrioridade ~/ 5);
-    
-    int minutosDecorridos = (tempoDecorrido / 60).round();
-    if (minutosDecorridos < 1) minutosDecorridos = 1;
-    int xpPeloTempo = minutosDecorridos * 10;
-    int xpTotalPrevisto = xpPeloTempo + xpGanho;
-    
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    showDialog(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          backgroundColor: isDark ? const Color(0xFF1E1E2A) : Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Row(
-            children: [
-              Icon(Icons.flag, color: quintosCompletados > 0 ? Colors.blueAccent : Colors.redAccent),
-              const SizedBox(width: 8),
-              Text('Concluir Sessão', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
-            ],
-          ),
-          content: Text(
-            quintosCompletados == 0
-                ? 'Você completou menos de 20% do tempo e NÃO receberá XP se finalizar agora.\n\nTem certeza que deseja abortar a sessão?'
-                : 'Você completou $quintosCompletados/5 do tempo da sessão.\n\nRecompensa:\n• $xpPeloTempo XP pelo tempo focado\n• $xpGanho XP bônus da missão\nTotal: $xpTotalPrevisto XP.\n\nDeseja concluir antecipadamente?',
-            style: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-                _finalizarSessaoAntecipada(quintosCompletados, xpGanho, tempoDecorrido);
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: quintosCompletados > 0 ? Colors.blueAccent : Colors.redAccent),
-              child: Text(quintosCompletados > 0 ? 'Concluir' : 'Abortar', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            ),
-          ],
-        );
-      }
-    );
-  }
-
-  Future<void> _finalizarSessaoAntecipada(int quintos, int xpGanho, int tempoDecorrido) async {
-    _timer?.cancel();
-    WakelockPlus.disable(); // Tela pode apagar novamente
-    setState(() {
-       _isRodando = false;
-    });
-
-    if (quintos > 0) {
-       try {
-          int minutosDecorridos = (tempoDecorrido / 60).round();
-          if (minutosDecorridos < 1) minutosDecorridos = 1;
-
-          // Salva no backend com o bônus de XP calculado
-          await MissaoService.salvarSessaoHiperfoco(minutosDecorridos, xpBonus: xpGanho);
-          
-          int xpTotalVisual = (minutosDecorridos * 10) + xpGanho;
-          
-          if (mounted) {
-             ScaffoldMessenger.of(context).showSnackBar(
-               SnackBar(content: Text('+$xpTotalVisual XP! Sessão concluída antecipadamente!'), backgroundColor: Colors.green),
-             );
-          }
-          
-          // Computa a sessão para a missão atual
-          await _processarFimDeSessaoDaMissao();
-          if (mounted) await sincronizarProgresso(context);
-
-       } catch(e) {
-          debugPrint('Erro ao salvar sessão parcial: $e');
-       }
-       
-       // Avança para a Pausa Curta (como um fluxo normal de fim de sessão)
-       setState(() {
-          _modoAtual = 1;
-       });
-       _resetarTimer(abortouFoco: false); 
-       
-    } else {
-       // Completou 0 quintos (menos de 5 minutos). Aborta sem XP e perde o combo.
-       if (mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(
-             const SnackBar(content: Text('Sessão abortada sem recompensas.'), backgroundColor: Colors.orange),
-           );
-       }
-       _resetarTimer(abortouFoco: true);
-    }
-  }
-
-  // Pega os segundos totais e transforma no formato "MM:SS"
-  String get _tempoFormatado {
-    int minutos = _segundosRestantesPorModo[_modoAtual] ~/ 60; // Pega a parte inteira dos minutos
-    int segundos = _segundosRestantesPorModo[_modoAtual] % 60; // Pega o resto dos segundos
-    // O padLeft garante que sempre tenha 2 dígitos (ex: "05" em vez de "5")
-    String minStr = minutos.toString().padLeft(2, '0');
-    String segStr = segundos.toString().padLeft(2, '0');
-    return '$minStr:$segStr';
-  }
-
-  // Calcula a quantidade de XP extra baseada no combo e prioridade
-  int _calcularBonusCombo() {
-    if (_comboAtual < 2) return 0; // Só ganha bônus a partir de 2 sessões seguidas
-    
-    if (missaoSelecionadaNotifier.value != null) {
-      String prioridade = missaoSelecionadaNotifier.value!.prioridade.toLowerCase();
-      // Valor extra equivalente à metade do XP da missão (Ex: Alta = 30 -> 15)
-      if (prioridade == 'alta') return 15;
-      if (prioridade == 'media') return 10;
-      if (prioridade == 'baixa') return 5;
-    }
-    return 2; // Bônus básico de streak se estiver focado sem missão selecionada
-  }
-
-  // Função auxiliar para retornar a cor baseada no modo atual
-  Color get _corAtual {
-    if (_modoAtual == 0) return const Color(0xFFA855F7); // Roxo
-    if (_modoAtual == 1) return const Color(0xFF4ADE80); // Verde
-    return const Color(0xFFFBBF24); // Amarelo
   }
 
   // --- INTERFACE VISUAL ---
@@ -577,7 +111,7 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
                 ),
                 IconButton(
                   icon: Icon(Icons.help_outline, color: isDark ? Colors.blueAccent : Colors.blue),
-                  onPressed: () => _showHiperfocoTutorial(context),
+                    onPressed: () => HiperfocoTutorial.showTutorial(context, keyAbas: _keyAbas, keyTimer: _keyTimer, keyControles: _keyControles),
                   tooltip: 'Ver Tutorial',
                 ),
               ],
@@ -619,338 +153,159 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
                 color: corCard, 
                 borderRadius: BorderRadius.circular(24),
               ),
-              child: Column(
-                children: [
-                  Container(
-                    key: _keyAbas,
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: corFundoSub,
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _buildAba(0, 'Foco', Icons.my_location),
-                        _buildAba(1, 'Pausa Curta', Icons.coffee),
-                        _buildAba(2, 'Pausa Longa', Icons.nightlight_round),
-                      ],
-                    ),
-                    ),
-                  ),
-                  const SizedBox(height: 48),
-
-                  Container(
-                    key: _keyTimer,
-                    width: 240,
-                    height: 240,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: corFundoSub,
-                      border: Border.all(
-                        color: corBorda,
-                        width: 12,
-                      ),
-                    ),
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            _tempoFormatado, // <-- Agora usa o tempo real!
-                            style: TextStyle(
-                              fontSize: 64,
-                              fontWeight: FontWeight.w900,
-                              color: corTextoPrincipal,
-                              letterSpacing: 2,
-                            ),
+              child: AnimatedBuilder(
+                animation: _controller,
+                builder: (context, _) {
+                  return Column(
+                    children: [
+                      Container(
+                        key: _keyAbas,
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(color: corFundoSub, borderRadius: BorderRadius.circular(30)),
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              AbaModoWidget(indice: 0, titulo: 'Foco', icone: Icons.my_location, isSelecionado: _controller.modoAtual == 0, corAtual: _controller.corAtual, onTap: () => _controller.mudarModo(0)),
+                              AbaModoWidget(indice: 1, titulo: 'Pausa Curta', icone: Icons.coffee, isSelecionado: _controller.modoAtual == 1, corAtual: _controller.corAtual, onTap: () => _controller.mudarModo(1)),
+                              AbaModoWidget(indice: 2, titulo: 'Pausa Longa', icone: Icons.nightlight_round, isSelecionado: _controller.modoAtual == 2, corAtual: _controller.corAtual, onTap: () => _controller.mudarModo(2)),
+                            ],
                           ),
-                          const SizedBox(height: 8),
-                          Row(
+                        ),
+                      ),
+                      const SizedBox(height: 48),
+
+                      Container(
+                        key: _keyTimer,
+                        width: 240,
+                        height: 240,
+                        decoration: BoxDecoration(shape: BoxShape.circle, color: corFundoSub, border: Border.all(color: corBorda, width: 12)),
+                        child: Center(
+                          child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(
-                                _modoAtual == 0 ? Icons.my_location : _modoAtual == 1 ? Icons.coffee : Icons.nightlight_round,
-                                color: _corAtual,
-                                size: 16,
-                              ),
-                              const SizedBox(width: 4),
                               Text(
-                                _modoAtual == 0 ? 'Modo Foco' : _modoAtual == 1 ? 'Descanse' : 'Pausa Longa',
-                                style: TextStyle(
-                                  color: _corAtual,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                _controller.tempoFormatado,
+                                style: TextStyle(fontSize: 64, fontWeight: FontWeight.w900, color: corTextoPrincipal, letterSpacing: 2),
                               ),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(_controller.modoAtual == 0 ? Icons.my_location : _controller.modoAtual == 1 ? Icons.coffee : Icons.nightlight_round, color: _controller.corAtual, size: 16),
+                                  const SizedBox(width: 4),
+                                  Text(_controller.modoAtual == 0 ? 'Modo Foco' : _controller.modoAtual == 1 ? 'Descanse' : 'Pausa Longa', style: TextStyle(color: _controller.corAtual, fontWeight: FontWeight.bold)),
+                                ],
+                              )
                             ],
-                          )
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text('Combo Hiperfoco ', style: TextStyle(color: Colors.grey)),
+                          ...List.generate(3, (index) {
+                            bool isAtivo = index < _controller.comboAtual;
+                            return Container(
+                              width: 16, height: 16, margin: const EdgeInsets.symmetric(horizontal: 2),
+                              decoration: BoxDecoration(color: isAtivo ? Colors.amber : (isDark ? const Color(0xFF252536) : Colors.grey.shade300), borderRadius: BorderRadius.circular(4)),
+                            );
+                          }),
+                          const SizedBox(width: 8),
+                          Text('+${_controller.calcularBonusCombo()} XP', style: TextStyle(color: _controller.comboAtual >= 2 ? Colors.amber : Colors.grey, fontWeight: FontWeight.bold)),
                         ],
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text('Combo Hiperfoco ', style: TextStyle(color: Colors.grey)),
-                      ...List.generate(3, (index) {
-                        bool isAtivo = index < _comboAtual;
-                        return Container(
-                          width: 16, 
-                          height: 16,
-                          margin: const EdgeInsets.symmetric(horizontal: 2),
-                          decoration: BoxDecoration(
-                            color: isAtivo ? Colors.amber : (isDark ? const Color(0xFF252536) : Colors.grey.shade300), 
-                            borderRadius: BorderRadius.circular(4)
-                          ),
-                        );
-                      }),
-                      const SizedBox(width: 8),
-                      Text('+${_calcularBonusCombo()} XP', style: TextStyle(color: _comboAtual >= 2 ? Colors.amber : Colors.grey, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _comboAtual >= 3 ? 'Combo Máximo Atingido! 🔥' : '${3 - _comboAtual} sessão(ões) para combo máximo', 
-                    style: TextStyle(color: _comboAtual >= 3 ? Colors.amber : Colors.grey, fontSize: 12, fontWeight: _comboAtual >= 3 ? FontWeight.bold : FontWeight.normal)
-                  ),
-                  const SizedBox(height: 32),
-
-                  Row(
-                    key: _keyControles,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Botão Resetar (Agora tem função!)
-                      IconButton(
-                        onPressed: () => _resetarTimer(abortouFoco: _isRodando && _modoAtual == 0), 
-                        icon: const Icon(Icons.refresh, color: Colors.grey),
-                        style: IconButton.styleFrom(
-                        backgroundColor: corFundoSub,
-                          padding: const EdgeInsets.all(16),
-                        ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _controller.comboAtual >= 3 ? 'Combo Máximo Atingido! 🔥' : '${3 - _controller.comboAtual} sessão(ões) para combo máximo', 
+                        style: TextStyle(color: _controller.comboAtual >= 3 ? Colors.amber : Colors.grey, fontSize: 12, fontWeight: _controller.comboAtual >= 3 ? FontWeight.bold : FontWeight.normal)
                       ),
-                      const SizedBox(width: 16),
-                      // Botão Iniciar/Pausar (Agora tem função!)
-                      GestureDetector(
-                        onTap: _iniciarPausarTimer,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
-                          decoration: BoxDecoration(
-                            color: _corAtual,
-                            borderRadius: BorderRadius.circular(30),
-                            boxShadow: [
-                              BoxShadow(
-                                color: _corAtual.withAlpha((0.4 * 255).round()),
-                                blurRadius: 20,
-                                spreadRadius: 2,
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                _isRodando ? Icons.pause : Icons.play_arrow,
-                                color: Colors.white,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                _isRodando ? 'Pausar' : 'Iniciar',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      IconButton(
-                        onPressed: () {
-                          if (_modoAtual == 0) {
-                            _confirmarConclusaoAntecipada();
-                          } else {
-                            // Em caso de pausas, funciona como um botão de "Pular" convencional
-                            setState(() {
-                              _modoAtual = (_modoAtual + 1) % 3;
-                            });
-                            _resetarTimer(abortouFoco: false);
-                          }
-                        },
-                        icon: Icon(_modoAtual == 0 ? Icons.task_alt : Icons.skip_next, color: Colors.grey),
-                        style: IconButton.styleFrom(
-                        backgroundColor: corFundoSub,
-                          padding: const EdgeInsets.all(16),
-                        ),
-                      ),
-                    ],
-                  ),
+                      const SizedBox(height: 32),
 
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    child: Divider(color: corBorda, thickness: 2),
-                  ),
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
                       Row(
+                        key: _keyControles,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.receipt_long, color: corTextoPrincipal, size: 20),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Lista de Tarefas',
-                            style: TextStyle(
-                              color: corTextoPrincipal,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                          IconButton(
+                            onPressed: () => _controller.resetarTimer(abortouFoco: _controller.isRodando && _controller.modoAtual == 0), 
+                            icon: const Icon(Icons.refresh, color: Colors.grey),
+                            style: IconButton.styleFrom(backgroundColor: corFundoSub, padding: const EdgeInsets.all(16)),
+                          ),
+                          const SizedBox(width: 16),
+                          GestureDetector(
+                            onTap: _controller.iniciarPausarTimer,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
+                              decoration: BoxDecoration(
+                                color: _controller.corAtual, borderRadius: BorderRadius.circular(30),
+                                boxShadow: [BoxShadow(color: _controller.corAtual.withOpacity(0.4), blurRadius: 20, spreadRadius: 2)],
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(_controller.isRodando ? Icons.pause : Icons.play_arrow, color: Colors.white),
+                                  const SizedBox(width: 8),
+                                  Text(_controller.isRodando ? 'Pausar' : 'Iniciar', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                                ],
+                              ),
                             ),
                           ),
+                          const SizedBox(width: 16),
+                          IconButton(
+                            onPressed: _controller.pularOuConfirmarAntecipado,
+                            icon: Icon(_controller.modoAtual == 0 ? Icons.task_alt : Icons.skip_next, color: Colors.grey),
+                            style: IconButton.styleFrom(backgroundColor: corFundoSub, padding: const EdgeInsets.all(16)),
+                          ),
                         ],
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  ValueListenableBuilder<List<Missao>>(
-                    valueListenable: missoesNotifier,
-                    builder: (context, missoesAtuais, _) {
-                      if (missoesAtuais.isEmpty) {
-                        return const Center(child: Padding(padding: EdgeInsets.all(16), child: Text('Nenhuma tarefa pendente.', style: TextStyle(color: Colors.grey))));
-                      }
-                      // Exibe a lista global de missões que vem da tela_inicial
-                      return Column(
-                        children: missoesAtuais.map((missao) => _buildTarefa(missao, isDark)).toList(),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAba(int indice, String titulo, IconData icone) {
-    bool isSelecionado = _modoAtual == indice;
-    return GestureDetector(
-      onTap: () {
-        // Pausa o cronômetro preservando o tempo em qualquer modo (inclusive Foco)
-        _timer?.cancel();
-        WakelockPlus.disable(); // Tela pode apagar novamente
-        setState(() {
-          _isRodando = false;
-          _modoAtual = indice;
-        });
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelecionado ? _corAtual : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icone,
-              size: 16,
-              color: isSelecionado ? Colors.white : Colors.grey,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              titulo,
-              style: TextStyle(
-                color: isSelecionado ? Colors.white : Colors.grey,
-                fontWeight: isSelecionado ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _selecionarTarefa(Missao missao) {
-    if (missao.concluida) return; // Não faz nada se já estiver concluída
-
-    setState(() {
-      if (missaoSelecionadaNotifier.value == missao) {
-        missaoSelecionadaNotifier.value = null; // Desmarca
-      } else {
-        missaoSelecionadaNotifier.value = missao; // Seleciona
-      }
-    });
-  }
-
-  Widget _buildTarefa(Missao missao, bool isDark) {
-    bool isConcluida = missao.concluida;
-    bool isSelecionada = missaoSelecionadaNotifier.value == missao;
-    String titulo = missao.titulo;
-
-    final corFundoSub = isDark ? const Color(0xFF13131A) : Colors.grey.shade100;
-    final corBorda = isDark ? const Color(0xFF252536) : Colors.grey.shade300;
-    
-    return GestureDetector(
-      onTap: () => _selecionarTarefa(missao),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isConcluida ? const Color.fromRGBO(29, 59, 49, 0.3) : (isSelecionada ? const Color(0xFF6B4EFF).withValues(alpha: 0.1) : corFundoSub),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isConcluida ? const Color(0xFF4ADE80) : (isSelecionada ? const Color(0xFF6B4EFF) : corBorda),
-            width: isSelecionada ? 2.0 : 1.5,
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                color: isConcluida ? const Color(0xFF4ADE80) : (isSelecionada ? const Color(0xFF6B4EFF) : Colors.transparent),
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(
-                  color: isConcluida ? const Color(0xFF4ADE80) : (isSelecionada ? const Color(0xFF6B4EFF) : corBorda),
-                )
-              ),
-              child: Icon(
-                isConcluida ? Icons.check : (isSelecionada ? Icons.my_location : Icons.crop_square),
-                color: isConcluida || isSelecionada ? (isDark ? const Color(0xFF1E1E2A) : Colors.white) : corBorda,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    titulo,
-                    style: TextStyle(
-                      color: isConcluida ? Colors.grey : (isDark ? Colors.white : Colors.black87),
-                      fontWeight: isSelecionada ? FontWeight.bold : FontWeight.w500,
-                      decoration: isConcluida ? TextDecoration.lineThrough : null,
-                    ),
-                  ),
-                  if (!isConcluida) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      'Sessões: ${missao.sessoesConcluidas} / ${missao.sessoesNecessarias}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isSelecionada ? const Color(0xFF6B4EFF) : Colors.grey,
+                      
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 24),
+                        child: Divider(color: corBorda, thickness: 2),
                       ),
-                    ),
-                  ]
-                ],
+                      
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.receipt_long, color: corTextoPrincipal, size: 20),
+                              const SizedBox(width: 8),
+                              Text('Lista de Tarefas', style: TextStyle(color: corTextoPrincipal, fontWeight: FontWeight.bold, fontSize: 16)),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      ValueListenableBuilder<List<Missao>>(
+                        valueListenable: missoesNotifier,
+                        builder: (context, missoesAtuais, _) {
+                          if (missoesAtuais.isEmpty) {
+                            return const Center(child: Padding(padding: EdgeInsets.all(16), child: Text('Nenhuma tarefa pendente.', style: TextStyle(color: Colors.grey))));
+                          }
+                          
+                          return ValueListenableBuilder<Missao?>(
+                            valueListenable: missaoSelecionadaNotifier,
+                            builder: (context, missaoSelecionada, _) {
+                              return Column(
+                                children: missoesAtuais.map((missao) => TarefaCardWidget(
+                                  missao: missao,
+                                  isSelecionada: missaoSelecionada == missao,
+                                  isDark: isDark,
+                                  onTap: () => _controller.selecionarTarefa(missao),
+                                )).toList(),
+                              );
+                            }
+                          );
+                        },
+                      ),
+                    ],
+                  );
+                }
               ),
             ),
           ],
