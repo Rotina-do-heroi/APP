@@ -1,4 +1,4 @@
-package com.example.app_rotina_mvp
+package com.heroi.app
 
 import io.flutter.embedding.android.FlutterActivity
 
