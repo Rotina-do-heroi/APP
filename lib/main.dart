@@ -8,6 +8,7 @@ import 'screens/tela_login.dart';
 import 'screens/tela_perfil.dart';
 import 'screens/tela_estatisticas.dart';
 import 'services/perfil_service.dart';
+import 'services/notification_service.dart'; // Importa o serviço de notificação
 
 // Notifier global para controlar o tema em todo o app
 final ValueNotifier<ThemeMode> temaNotifier = ValueNotifier(ThemeMode.dark);
@@ -195,9 +196,25 @@ Future<bool> verificarLoginAtivo() async {
 }
 
 Future<void> main() async {
+  // Garante que os bindings do Flutter foram inicializados antes de qualquer outra coisa.
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: ".env");
-  runApp(const AppRotina());
+
+  try {
+    // Carrega as variáveis de ambiente. Essencial para a comunicação com a API.
+    await dotenv.load(fileName: ".env");
+
+    // Inicializa o serviço de notificações e solicita as permissões necessárias.
+    // É crucial fazer isso na inicialização para que as notificações agendadas funcionem.
+    final notificationService = NotificationService();
+    await notificationService.inicializar();
+    await notificationService.solicitarPermissoes();
+  } catch (e) {
+    // Se a inicialização falhar, logamos o erro. O app ainda tentará rodar,
+    // mas funcionalidades como a API e notificações podem não funcionar.
+    debugPrint('Falha na inicialização de serviços essenciais: $e');
+  }
+
+  runApp(const AppRotina()); // Inicia a aplicação Flutter.
 }
 
 class AppRotina extends StatelessWidget {

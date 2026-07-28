@@ -166,10 +166,10 @@ class _TelaLoginState extends State<TelaLogin> {
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     decoration: BoxDecoration(
                       color: const Color(0xFF6B4EFF),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12), // AVISO: O método 'withOpacity' está depreciado.
                       boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF6B4EFF).withOpacity(0.4),
+                        BoxShadow( // 0.4 * 255 = 102
+                          color: const Color(0xFF6B4EFF).withAlpha(102),
                           blurRadius: 12,
                           spreadRadius: 2,
                         ),

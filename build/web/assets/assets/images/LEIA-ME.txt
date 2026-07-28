@@ -1,0 +1,14 @@
+INSTRUÇÕES PARA ADICIONAR O GIF DO HEROI:
+
+1. Baixe ou crie um arquivo GIF animado do seu herói
+2. Renomeie o arquivo para: hero_avatar.gif
+3. Coloque este arquivo nesta pasta (assets/images/)
+4. Execute: flutter pub get
+5. Teste o app
+
+IMPORTANTE:
+- O GIF deve ter tamanho aproximado de 60x60 pixels para caber bem
+- Formato: .gif (com animação)
+- Nome exato: hero_avatar.gif
+
+Se o GIF não carregar, o app mostrará o ícone de pessoa como fallback.

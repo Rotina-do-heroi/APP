@@ -252,8 +252,9 @@ class HiperfocoController extends ChangeNotifier with WidgetsBindingObserver {
     int xpBasePrioridade = 10; 
     if (missaoSelecionadaNotifier.value != null) {
       String prio = missaoSelecionadaNotifier.value!.prioridade.toLowerCase();
-      if (prio == 'alta') xpBasePrioridade = 30;
-      else if (prio == 'media') xpBasePrioridade = 20;
+      if (prio == 'alta') {
+        xpBasePrioridade = 30;
+      } else if (prio == 'media') xpBasePrioridade = 20;
       else if (prio == 'baixa') xpBasePrioridade = 10;
     }
     

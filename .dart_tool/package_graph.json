@@ -5,7 +5,7 @@
   "packages": [
     {
       "name": "app_rotina_mvp",
-      "version": "1.0.0+1",
+      "version": "1.0.1+2",
       "dependencies": [
         "cupertino_icons",
         "flutter",
@@ -18,10 +18,16 @@
         "wakelock_plus"
       ],
       "devDependencies": [
+        "change_app_package_name",
         "flutter_launcher_icons",
         "flutter_lints",
         "flutter_test"
       ]
+    },
+    {
+      "name": "change_app_package_name",
+      "version": "1.5.0",
+      "dependencies": []
     },
     {
       "name": "flutter_lints",

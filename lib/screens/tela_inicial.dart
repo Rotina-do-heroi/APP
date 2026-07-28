@@ -94,6 +94,7 @@ class _TelaInicialTarefasState extends State<TelaInicialTarefas> {
                   missaoSelecionadaNotifier.value = null;
                 }
 
+                if (!mounted) return;
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Missão excluída com sucesso!'), backgroundColor: Colors.redAccent),

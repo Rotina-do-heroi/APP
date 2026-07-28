@@ -420,8 +420,8 @@ class _TelaPerfilState extends State<TelaPerfil> {
                         shape: BoxShape.circle,
                         border: Border.all(color: const Color(0xFF6B4EFF), width: 3),
                         boxShadow: [
-                          BoxShadow(
-                        color: const Color(0xFF6B4EFF).withValues(alpha: 0.3),
+                          BoxShadow( // AVISO: O método 'withOpacity' está depreciado.
+                        color: const Color(0xFF6B4EFF).withAlpha(77), // 0.3 * 255 = 76.5 -> 77
                             blurRadius: 10,
                             spreadRadius: 2,
                           ),
@@ -541,14 +541,14 @@ class _TelaPerfilState extends State<TelaPerfil> {
               // --- 3. INVENTÁRIO (DECORAÇÕES) ---
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Text(
+                children: [
+                  const Text(
                     'Inventário',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey),
                   ),
                   Text(
                     'Equipamentos',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF6B4EFF)),
+                    style: const TextStyle(fontSize: 12, color: Color(0xFF6B4EFF)),
                   ),
                 ],
               ),
@@ -597,8 +597,8 @@ class _TelaPerfilState extends State<TelaPerfil> {
                         width: 90,
                         margin: const EdgeInsets.only(right: 12),
                         decoration: BoxDecoration(
-                          color: isEquipado 
-                          ? const Color(0xFF6B4EFF).withValues(alpha: 0.2) 
+                          color: isEquipado // AVISO: O método 'withOpacity' está depreciado.
+                          ? const Color(0xFF6B4EFF).withAlpha(51) // 0.2 * 255 = 51
                           : corCard,
                           borderRadius: const BorderRadius.all(Radius.circular(16)),
                           border: Border.all(
@@ -612,14 +612,14 @@ class _TelaPerfilState extends State<TelaPerfil> {
                             Icon(
                               isDesbloqueado ? item['icone'] : Icons.lock,
                               color: isDesbloqueado 
-                                ? (isEquipado ? const Color(0xFF6B4EFF) : corTextoPrincipal)
-                            : Colors.grey.withValues(alpha: 0.5),
+                                ? (isEquipado ? const Color(0xFF6B4EFF) : corTextoPrincipal) // AVISO: O método 'withOpacity' está depreciado.
+                            : Colors.grey.withAlpha(128), // 0.5 * 255 = 127.5 -> 128
                               size: 32,
                             ),
                             const SizedBox(height: 8),
                             Text(
                               item['nome'],
-                              textAlign: TextAlign.center,
+                              textAlign: TextAlign.center, // AVISO: O método 'withOpacity' está depreciado.
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: isEquipado ? FontWeight.bold : FontWeight.normal,
@@ -689,8 +689,8 @@ class _TelaPerfilState extends State<TelaPerfil> {
                         margin: const EdgeInsets.only(right: 12),
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
-                          color: isEquipado
-                          ? const Color(0xFF6B4EFF).withValues(alpha: 0.2)
+                          color: isEquipado // AVISO: O método 'withOpacity' está depreciado.
+                          ? const Color(0xFF6B4EFF).withAlpha(51) // 0.2 * 255 = 51
                           : corCard,
                           borderRadius: const BorderRadius.all(Radius.circular(12)),
                           border: Border.all(
@@ -710,7 +710,7 @@ class _TelaPerfilState extends State<TelaPerfil> {
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: isEquipado ? FontWeight.bold : FontWeight.normal,
-                      color: isDesbloqueado ? corTextoPrincipal : Colors.grey.withValues(alpha: 0.5),
+                      color: isDesbloqueado ? corTextoPrincipal : Colors.grey.withAlpha(128), // 0.5 * 255 = 127.5 -> 128
                               ),
                             ),
                           ],
@@ -809,8 +809,8 @@ class _TelaPerfilState extends State<TelaPerfil> {
         children: [
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFF4ADE80).withValues(alpha: 0.2),
+            decoration: BoxDecoration( // AVISO: O método 'withOpacity' está depreciado.
+              color: const Color(0xFF4ADE80).withAlpha(51), // 0.2 * 255 = 51
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.check, color: Color(0xFF4ADE80), size: 20),

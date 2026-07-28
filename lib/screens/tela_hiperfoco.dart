@@ -240,9 +240,9 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
                             onTap: _controller.iniciarPausarTimer,
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
-                              decoration: BoxDecoration(
+                              decoration: BoxDecoration( // AVISO: O método 'withOpacity' está depreciado.
                                 color: _controller.corAtual, borderRadius: BorderRadius.circular(30),
-                                boxShadow: [BoxShadow(color: _controller.corAtual.withOpacity(0.4), blurRadius: 20, spreadRadius: 2)],
+                                boxShadow: [BoxShadow(color: _controller.corAtual.withAlpha(102), blurRadius: 20, spreadRadius: 2)], // 0.4 * 255 = 102
                               ),
                               child: Row(
                                 children: [
