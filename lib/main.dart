@@ -286,7 +286,7 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
   // Variável para controlar qual aba está selecionada
   int _indiceAtual = 0;
 
-  // Lista de telas (por enquanto são apenas textos para visualização)
+  // Lista de telas que serão preservadas na memória
   final List<Widget> _telas = [
     const TelaInicialTarefas(),
     const TelaHiperfoco(),
@@ -356,8 +356,12 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // O corpo do app vai mostrar a tela correspondente ao índice selecionado
-      body: _telas[_indiceAtual],
+      // SOLUÇÃO: Utilizamos IndexedStack para preservar o estado de todas as abas.
+      // Isso impede que o Timer do Hiperfoco (ou scroll de outras telas) seja reiniciado ao trocar de aba.
+      body: IndexedStack(
+        index: _indiceAtual,
+        children: _telas,
+      ),
       
       // Barra de navegação inferior
       bottomNavigationBar: BottomNavigationBar(
@@ -365,7 +369,7 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
         type: BottomNavigationBarType.fixed, // Mantém os ícones fixos
         currentIndex: _indiceAtual,
         onTap: (indice) {
-          // Atualiza a tela quando um ícone é clicado
+          // Atualiza a aba selecionada no estado global e local
           abaAtualNotifier.value = indice;
         },
         items: const [
