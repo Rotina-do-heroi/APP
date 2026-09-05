@@ -16,7 +16,6 @@ class SeletorDiasSemana extends StatefulWidget {
 
 class _SeletorDiasSemanaState extends State<SeletorDiasSemana> {
   late List<int> _diasSelecionados;
-  // Usando padrão DateTime.weekday: 1=Segunda, 7=Domingo
   final List<String> _diasDaSemana = ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB', 'DOM'];
 
   @override
@@ -50,31 +49,52 @@ class _SeletorDiasSemanaState extends State<SeletorDiasSemana> {
           style: TextStyle(
             color: isDark ? Colors.white70 : Colors.black54,
             fontWeight: FontWeight.bold,
+            fontSize: 14,
           ),
         ),
         const SizedBox(height: 12),
+        // Linha 1: Seg, Ter, Qua, Qui
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: List.generate(7, (index) {
-            final dia = index + 1; // 1 para Segunda, 7 para Domingo
-            final isSelected = _diasSelecionados.contains(dia);
-            return GestureDetector(
-              onTap: () => _toggleDia(dia),
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: isSelected ? corPrimaria : (isDark ? const Color(0xFF252536) : Colors.grey.shade200),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Center(
-                  child: Text(_diasDaSemana[index], style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black54), fontWeight: FontWeight.bold)),
-                ),
-              ),
-            );
-          }),
+          children: List.generate(4, (index) => _buildDiaItem(index + 1, isDark, corPrimaria)),
+        ),
+        const SizedBox(height: 8),
+        // Linha 2: Sex, Sab, Dom
+        Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            ...List.generate(3, (index) => Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: _buildDiaItem(index + 5, isDark, corPrimaria),
+            )),
+          ],
         ),
       ],
+    );
+  }
+
+  Widget _buildDiaItem(int dia, bool isDark, Color corPrimaria) {
+    final isSelected = _diasSelecionados.contains(dia);
+    return GestureDetector(
+      onTap: () => _toggleDia(dia),
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: isSelected ? corPrimaria : (isDark ? const Color(0xFF252536) : Colors.grey.shade200),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Center(
+          child: Text(
+            _diasDaSemana[dia - 1],
+            style: TextStyle(
+              fontSize: 11,
+              color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black54),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

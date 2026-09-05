@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../models/missao.dart';
 import 'seletor_dias_semana.dart';
 
-
 class CardDaMissao extends StatefulWidget {
   final ValueChanged<Missao> onCriarMissao;
 
@@ -20,6 +19,8 @@ class _CardDaMissaoState extends State<CardDaMissao> {
   final TextEditingController _controladorDescricao = TextEditingController();
   final TextEditingController _controladorMicroPasso = TextEditingController();
   final List<TextEditingController> _controladoresMicroPassos = [];
+  final ScrollController _scrollController = ScrollController();
+  
   String? _prioridadeSelecionada;
   String? _atributoSelecionado;
   int _sessoesNecessarias = 1;
@@ -30,6 +31,7 @@ class _CardDaMissaoState extends State<CardDaMissao> {
     _controladorTitulo.dispose();
     _controladorDescricao.dispose();
     _controladorMicroPasso.dispose();
+    _scrollController.dispose();
     for (final controller in _controladoresMicroPassos) {
       controller.dispose();
     }
@@ -66,396 +68,116 @@ class _CardDaMissaoState extends State<CardDaMissao> {
           builder: (BuildContext context, StateSetter setState) {
             return AlertDialog(
               backgroundColor: corFundoDialog,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               title: Text(
                 'Nova missão',
-                style: TextStyle(
-                  color: corTextoDialog,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(color: corTextoDialog, fontSize: 18, fontWeight: FontWeight.bold),
               ),
               content: SingleChildScrollView(
+                controller: _scrollController,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '📊 Titulo da missão',
-                      style: TextStyle(
-                        color: corTextoSecundario,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _controladorTitulo,
-                      style: TextStyle(color: corTextoDialog),
-                      decoration: InputDecoration(
-                        hintText: 'Digite o título da missão',
-                        hintStyle: const TextStyle(color: Colors.grey),
-                        filled: true,
-                        fillColor: corFundoInput,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: corBordaInput),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: corBordaInput),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Colors.blue, width: 2),
-                        ),
-                      ),
-                    ),
+                    _buildLabel('📊 Titulo da missão', corTextoSecundario),
+                    _buildTextField(_controladorTitulo, 'Ex: Estudar Flutter', corTextoDialog, corFundoInput, corBordaInput),
                     const SizedBox(height: 16),
-                    Text(
-                      'Descrição (Opcional)',
-                      style: TextStyle(
-                        color: corTextoSecundario,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _controladorDescricao,
-                      style: TextStyle(color: corTextoDialog),
-                      decoration: InputDecoration(
-                        hintText: 'Digite a descrição da missão',
-                        hintStyle: const TextStyle(color: Colors.grey),
-                        filled: true,
-                        fillColor: corFundoInput,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: corBordaInput),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: corBordaInput),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Colors.blue, width: 2),
-                        ),
-                      ),
-                    ),
+                    
+                    _buildLabel('Descrição (Opcional)', corTextoSecundario),
+                    _buildTextField(_controladorDescricao, 'Detalhes da jornada...', corTextoDialog, corFundoInput, corBordaInput),
                     const SizedBox(height: 16),
-                    Text(
-                      'Prioridade',
-                      style: TextStyle(
-                        color: corTextoSecundario,
-                        fontSize: 14,
-                      ),
-                    ),
+
+                    _buildLabel('Prioridade', corTextoSecundario),
                     const SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _prioridadeSelecionada = 'alta';
-                            });
-                          },
-                          child: Container(
-                            width: 80,
-                            height: 30,
-                            decoration: BoxDecoration(
-                              color: _prioridadeSelecionada == 'alta'
-                                  ? Colors.red
-                                  : corFundoInput,
-                              border: Border.all(
-                                color: _prioridadeSelecionada == 'alta'
-                                    ? Colors.red
-                                    : corBordaInput,
-                                width: 2,
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Center(
-                              child: Text(
-                                'Alta',
-                                style: TextStyle(
-                                  color: _prioridadeSelecionada == 'alta' ? Colors.white : corTextoDialog,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _prioridadeSelecionada = 'media';
-                            });
-                          },
-                          child: Container(
-                            width: 80,
-                            height: 30,
-                            decoration: BoxDecoration(
-                              color: _prioridadeSelecionada == 'media'
-                                  ? Colors.amber
-                                  : corFundoInput,
-                              border: Border.all(
-                                color: _prioridadeSelecionada == 'media'
-                                    ? Colors.amber
-                                    : corBordaInput,
-                                width: 2,
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Center(
-                              child: Text(
-                                'Média',
-                                style: TextStyle(
-                                  color: _prioridadeSelecionada == 'media' ? Colors.white : corTextoDialog,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _prioridadeSelecionada = 'baixa';
-                            });
-                          },
-                          child: Container(
-                            width: 80,
-                            height: 30,
-                            decoration: BoxDecoration(
-                              color: _prioridadeSelecionada == 'baixa'
-                                  ? Colors.green
-                                  : corFundoInput,
-                              border: Border.all(
-                                color: _prioridadeSelecionada == 'baixa'
-                                    ? Colors.green
-                                    : corBordaInput,
-                                width: 2,
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Center(
-                              child: Text(
-                                'Baixa',
-                                style: TextStyle(
-                                  color: _prioridadeSelecionada == 'baixa' ? Colors.white : corTextoDialog,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
+                        _buildPrioridadeBtn('Alta', Colors.red, setState, corFundoInput, corBordaInput, corTextoDialog),
+                        _buildPrioridadeBtn('Média', Colors.amber, setState, corFundoInput, corBordaInput, corTextoDialog),
+                        _buildPrioridadeBtn('Baixa', Colors.green, setState, corFundoInput, corBordaInput, corTextoDialog),
                       ],
                     ),
                     const SizedBox(height: 16),
-                    Text(
-                      'Atributo Relacionado (Recompensa)',
-                      style: TextStyle(
-                        color: corTextoSecundario,
-                        fontSize: 14,
-                      ),
-                    ),
+
+                    _buildLabel('Atributo Relacionado', corTextoSecundario),
                     const SizedBox(height: 8),
                     Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
+                      spacing: 8, runSpacing: 8,
                       children: [
                         _buildBotaoAtributo('Intelecto', Icons.psychology, Colors.blueAccent, setState, isDark),
                         _buildBotaoAtributo('Força', Icons.fitness_center, const Color(0xFF4ADE80), setState, isDark),
                       ],
                     ),
                     const SizedBox(height: 16),
-                    Text(
-                      'Sessões de Foco Necessárias',
-                      style: TextStyle(
-                        color: corTextoSecundario,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
+
+                    _buildLabel('Sessões de Foco', corTextoSecundario),
                     Row(
                       children: [
-                        IconButton(
-                          onPressed: _sessoesNecessarias > 1
-                              ? () => setState(() => _sessoesNecessarias--)
-                              : null,
-                          icon: Icon(Icons.remove_circle_outline, color: corTextoDialog),
-                        ),
-                        Text(
-                          '$_sessoesNecessarias',
-                          style: TextStyle(color: corTextoDialog, fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                        IconButton(
-                          onPressed: () => setState(() => _sessoesNecessarias++),
-                          icon: Icon(Icons.add_circle_outline, color: corTextoDialog),
-                        ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'sessão(ões) de 25 min',
-                          style: TextStyle(color: Colors.grey, fontSize: 12),
-                        ),
+                        IconButton(onPressed: _sessoesNecessarias > 1 ? () => setState(() => _sessoesNecessarias--) : null, icon: Icon(Icons.remove_circle_outline, color: corTextoDialog)),
+                        Text('$_sessoesNecessarias', style: TextStyle(color: corTextoDialog, fontSize: 18, fontWeight: FontWeight.bold)),
+                        IconButton(onPressed: () => setState(() => _sessoesNecessarias++), icon: Icon(Icons.add_circle_outline, color: corTextoDialog)),
                       ],
                     ),
                     const SizedBox(height: 16),
+
                     SeletorDiasSemana(
                       diasSelecionadosInicial: _diasRepeticao,
-                      onSelectionChanged: (dias) {
-                        setState(() {
-                          _diasRepeticao = dias;
-                        });
-                      },
+                      onSelectionChanged: (dias) => setState(() => _diasRepeticao = dias),
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Micro-passos',
-                      style: TextStyle(
-                        color: corTextoSecundario,
-                        fontSize: 14,
-                      ),
-                    ),
+                    const SizedBox(height: 24),
+
+                    _buildLabel('Micro-passos (Máx 3)', corTextoSecundario),
                     const SizedBox(height: 8),
-                    TextField(
-                      controller: _controladorMicroPasso,
-                      style: TextStyle(color: corTextoDialog),
-                      decoration: InputDecoration(
-                        hintText: 'Digite um micro-passo',
-                        hintStyle: const TextStyle(color: Colors.grey),
-                        filled: true,
-                        fillColor: corFundoInput,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: corBordaInput),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: corBordaInput),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Colors.blue, width: 2),
-                        ),
-                      ),
-                    ),
+                    _buildTextField(_controladorMicroPasso, 'Primeiro passo...', corTextoDialog, corFundoInput, corBordaInput),
+                    
                     const SizedBox(height: 8),
-                    OutlinedButton(
-                      onPressed: () {
-                        if (_controladoresMicroPassos.length < 2) {
-                          setState(() {
-                            _controladoresMicroPassos.add(TextEditingController());
+                    ..._controladoresMicroPassos.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8.0),
+                        child: Row(
+                          children: [
+                            Expanded(child: _buildTextField(entry.value, 'Passo adicional ${index + 2}', corTextoDialog, corFundoInput, corBordaInput)),
+                            IconButton(
+                              onPressed: () => setState(() {
+                                entry.value.dispose();
+                                _controladoresMicroPassos.removeAt(index);
+                              }),
+                              icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+
+                    if (_controladoresMicroPassos.length < 2)
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          setState(() => _controladoresMicroPassos.add(TextEditingController()));
+                          // Rolagem automática leve para o novo campo
+                          Future.delayed(const Duration(milliseconds: 150), () {
+                            _scrollController.animateTo(
+                              _scrollController.position.maxScrollExtent,
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeOut,
+                            );
                           });
-                        }
-                      },
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Colors.purple, width: 1.8),
-                        foregroundColor: Colors.purple,
-                      ),
-                      child: const Text('+Adicionar micro-passo'),
-                    ),
-                    const SizedBox(height: 8),
-                    ..._controladoresMicroPassos.asMap().entries.map(
-                      (entry) {
-                        final index = entry.key;
-                        final controller = entry.value;
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8.0),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: controller,
-                                  style: TextStyle(color: corTextoDialog),
-                                  decoration: InputDecoration(
-                                    hintText: 'Micro-passo adicional ${index + 1}',
-                                    hintStyle: const TextStyle(color: Colors.grey),
-                                    filled: true,
-                                    fillColor: corFundoInput,
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(color: corBordaInput),
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(color: corBordaInput),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                      borderSide: const BorderSide(color: Colors.blue, width: 2),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              IconButton(
-                                onPressed: () {
-                                  setState(() {
-                                    controller.dispose();
-                                    _controladoresMicroPassos.removeAt(index);
-                                  });
-                                },
-                                icon: const Icon(
-                                  Icons.delete,
-                                  color: Colors.red,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
+                        },
+                        icon: const Icon(Icons.add, size: 18),
+                        label: const Text('Adicionar micro-passo'),
+                        style: OutlinedButton.styleFrom(foregroundColor: Colors.purple, side: const BorderSide(color: Colors.purple)),
+                      )
+                    else
+                      const Text('⚠️ Limite de 3 micro-passos atingido', style: TextStyle(color: Colors.orange, fontSize: 11, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
               actions: [
-                TextButton(
-                  onPressed: () {
-                    _limparCamposDialogo();
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text(
-                    'Cancelar',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar', style: TextStyle(color: Colors.grey))),
                 ElevatedButton(
-                  onPressed: () {
-                    String titulo = _controladorTitulo.text;
-                    if (titulo.isNotEmpty) {
-                      final microPassos = <MicroPasso>[];
-                      if (_controladorMicroPasso.text.trim().isNotEmpty) {
-                        microPassos.add(MicroPasso(descricao: _controladorMicroPasso.text.trim()));
-                      }
-                      for (final controller in _controladoresMicroPassos) {
-                        final texto = controller.text.trim();
-                        if (texto.isNotEmpty) {
-                          microPassos.add(MicroPasso(descricao: texto));
-                        }
-                      }
-                      final missao = Missao(
-                        titulo: titulo.trim(),
-                        descricao: _controladorDescricao.text.trim(),
-                        tags: _atributoSelecionado != null ? [_atributoSelecionado!] : [],
-                        prioridade: _prioridadeSelecionada ?? 'baixa',
-                        microPassos: microPassos,
-                        sessoesNecessarias: _sessoesNecessarias,
-                        diasRepeticao: _diasRepeticao,
-                      );
-                      debugPrint('Enviando missão com dias repetidos: ${missao.diasRepeticao}');
-                      widget.onCriarMissao(missao);
-                      _limparCamposDialogo();
-                      Navigator.of(context).pop();
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('Criar'),
+                  onPressed: () => _finalizarCriacao(context),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
+                  child: const Text('Criar Missão'),
                 ),
               ],
             );
@@ -465,58 +187,96 @@ class _CardDaMissaoState extends State<CardDaMissao> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton.icon(
-      onPressed: _abrirDialogoNovaMissao,
-      icon: const Icon(Icons.add),
-      label: const Text('Nova missão'),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
+  void _finalizarCriacao(BuildContext context) {
+    if (_controladorTitulo.text.isEmpty) return;
+    
+    final microPassos = <MicroPasso>[];
+    if (_controladorMicroPasso.text.isNotEmpty) microPassos.add(MicroPasso(descricao: _controladorMicroPasso.text.trim()));
+    for (var c in _controladoresMicroPassos) {
+      if (c.text.isNotEmpty) microPassos.add(MicroPasso(descricao: c.text.trim()));
+    }
+
+    final missao = Missao(
+      titulo: _controladorTitulo.text.trim(),
+      descricao: _controladorDescricao.text.trim(),
+      tags: _atributoSelecionado != null ? [_atributoSelecionado!] : [],
+      prioridade: _prioridadeSelecionada ?? 'baixa',
+      microPassos: microPassos,
+      sessoesNecessarias: _sessoesNecessarias,
+      diasRepeticao: _diasRepeticao,
+    );
+
+    widget.onCriarMissao(missao);
+    Navigator.pop(context);
+  }
+
+  // --- HELPERS DE INTERFACE ---
+
+  Widget _buildLabel(String texto, Color cor) => Padding(
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Text(texto, style: TextStyle(color: cor, fontSize: 13, fontWeight: FontWeight.w600)),
+  );
+
+  Widget _buildTextField(TextEditingController controller, String hint, Color textoCor, Color fundo, Color borda) => TextField(
+    controller: controller,
+    style: TextStyle(color: textoCor, fontSize: 14),
+    decoration: InputDecoration(
+      hintText: hint,
+      hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+      filled: true, fillColor: fundo,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: borda)),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: borda)),
+    ),
+  );
+
+  Widget _buildPrioridadeBtn(String label, Color cor, StateSetter setState, Color fundo, Color borda, Color texto) {
+    final slug = label.toLowerCase().replaceAll('é', 'e');
+    final isSelected = _prioridadeSelecionada == slug;
+    return GestureDetector(
+      onTap: () => setState(() => _prioridadeSelecionada = slug),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? cor : fundo,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: isSelected ? cor : borda),
+        ),
+        child: Text(label, style: TextStyle(color: isSelected ? Colors.white : texto, fontSize: 12, fontWeight: FontWeight.bold)),
       ),
     );
   }
 
-  Widget _buildBotaoAtributo(String nome, IconData icone, Color cor, StateSetter setStateDialogo, bool isDark) {
+  Widget _buildBotaoAtributo(String nome, IconData icone, Color cor, StateSetter setState, bool isDark) {
     final isSelecionado = _atributoSelecionado == nome;
-    final corFundoInput = isDark ? const Color(0xFF13131A) : Colors.grey.shade100;
-    final corBordaInput = isDark ? const Color(0xFF2E2E40) : Colors.grey.shade300;
-    final corTextoDialog = isDark ? Colors.white : Colors.black87;
-    
     return GestureDetector(
-      onTap: () {
-        setStateDialogo(() {
-          // Se já estiver selecionado, desmarca. Senão, seleciona.
-          _atributoSelecionado = isSelecionado ? null : nome;
-        });
-      },
+      onTap: () => setState(() => _atributoSelecionado = isSelecionado ? null : nome),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelecionado ? cor.withOpacity(0.2) : corFundoInput,
-          border: Border.all(
-            color: isSelecionado ? cor : corBordaInput,
-            width: 2,
-          ),
-          borderRadius: BorderRadius.circular(12),
+          color: isSelecionado ? cor.withOpacity(0.2) : (isDark ? const Color(0xFF13131A) : Colors.grey.shade100),
+          border: Border.all(color: isSelecionado ? cor : (isDark ? const Color(0xFF2E2E40) : Colors.grey.shade300), width: 1.5),
+          borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icone, size: 16, color: isSelecionado ? cor : Colors.grey),
             const SizedBox(width: 6),
-            Text(
-              nome,
-              style: TextStyle(
-                color: isSelecionado ? corTextoDialog : Colors.grey,
-                fontSize: 12,
-                fontWeight: isSelecionado ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
+            Text(nome, style: TextStyle(color: isSelecionado ? (isDark ? Colors.white : Colors.black87) : Colors.grey, fontSize: 12)),
           ],
         ),
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton.icon(
+      onPressed: _abrirDialogoNovaMissao,
+      icon: const Icon(Icons.add, size: 20),
+      label: const Text('Nova missão', style: TextStyle(fontWeight: FontWeight.bold)),
+      style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
     );
   }
 }
