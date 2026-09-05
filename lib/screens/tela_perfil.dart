@@ -5,8 +5,8 @@ import '../services/perfil_service.dart';
 import '../services/auth_service.dart';
 import 'tela_login.dart';
 import 'tela_editar_perfil.dart';
-import '../services/inventario_service.dart'; // Importante para poder salvar os itens ao equipá-los pela tela de Perfil
-import '../main.dart'; // Importa os notifiers globais de XP e Nível
+import '../services/inventario_service.dart'; 
+import '../main.dart'; // Importa os notifiers globais e o utilitário showCustomSnackBar
 
 
 class TelaPerfil extends StatefulWidget {
@@ -18,7 +18,6 @@ class TelaPerfil extends StatefulWidget {
 
 class _TelaPerfilState extends State<TelaPerfil> {
   // Inventário
-  // 'id' único para identificar, 'nome' do item, 'icone', e 'nivelMinimo' exigido
   final List<Map<String, dynamic>> _inventario = [
     {'id': 0, 'nome': 'Sem armadura', 'icone': Icons.accessibility_new, 'nivelMinimo': 1},
     {'id': 1, 'nome': 'Set de Couro', 'icone': Icons.security, 'nivelMinimo': 10},
@@ -36,7 +35,6 @@ class _TelaPerfilState extends State<TelaPerfil> {
   String _focoSt = '0', _discSt = '0', _intSt = '0', _forSt = '0', _conSt = '0';
   List<dynamic> _conquistasRecentes = [];
 
-  // Lista de Títulos e níveis necessários para desbloqueá-los
   final List<Map<String, dynamic>> _titulos = [
     {'id': 1, 'nome': 'Iniciante da Jornada', 'nivelMinimo': 1},
     {'id': 2, 'nome': 'Aprendiz do Tempo', 'nivelMinimo': 5},
@@ -50,7 +48,6 @@ class _TelaPerfilState extends State<TelaPerfil> {
     {'id': 10, 'nome': 'Lenda da Consistência', 'nivelMinimo': 100},
   ];
 
-  // Chaves para o Tutorial
   final GlobalKey _keyInfoBasica = GlobalKey();
   final GlobalKey _keyAtributos = GlobalKey();
   final GlobalKey _keyInventario = GlobalKey();
@@ -67,7 +64,6 @@ class _TelaPerfilState extends State<TelaPerfil> {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getString('user_id') ?? '';
     final chaveTutorial = 'primeiro_acesso_perfil_tela_$userId';
-    // Puxa se é o primeiro acesso na tela de Perfil
     final bool primeiroAcesso = prefs.getBool(chaveTutorial) ?? true;
 
     if (primeiroAcesso) {
@@ -75,7 +71,6 @@ class _TelaPerfilState extends State<TelaPerfil> {
         if (!mounted) return;
         _showPerfilTutorial(context);
       });
-      // Salva que o usuário já viu o tutorial dessa tela
       await prefs.setBool(chaveTutorial, false);
     }
   }
@@ -244,7 +239,6 @@ class _TelaPerfilState extends State<TelaPerfil> {
 
   Future<void> _fetchPerfil() async {
     try {
-      // Chamada usando o método estático conforme o padrão de serviços
       final perfilData = await PerfilService.buscarPerfil();
       
       if (!mounted) return;
@@ -302,12 +296,11 @@ class _TelaPerfilState extends State<TelaPerfil> {
             ),
             ElevatedButton(
               onPressed: () async {
-                Navigator.of(dialogContext).pop(); // Fecha o dialog usando o contexto do dialog
-                await AuthService.logout(); // Limpa os dados de sessão
+                Navigator.of(dialogContext).pop(); 
+                await AuthService.logout(); 
                 
-                if (!context.mounted) return; // Verifica o contexto passado na função, e não o Estado
+                if (!context.mounted) return; 
                 
-                // Remove todas as rotas anteriores e envia para o Login
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(builder: (context) => const TelaLogin()),
                   (route) => false,
@@ -324,7 +317,6 @@ class _TelaPerfilState extends State<TelaPerfil> {
 
   @override
   Widget build(BuildContext context) {
-    // Pega o título equipado com tratamento de erro e tipagem segura
     final Map<String, dynamic> tituloEncontrado = _titulos.firstWhere(
       (t) => t['id'] == _tituloEquipadoId,
       orElse: () => _titulos.first,
@@ -412,7 +404,6 @@ class _TelaPerfilState extends State<TelaPerfil> {
                 ),
                 child: Row(
                   children: [
-                    // Avatar com Borda Gamificada
                     Container(
                       width: 80,
                       height: 80,
@@ -420,15 +411,14 @@ class _TelaPerfilState extends State<TelaPerfil> {
                         shape: BoxShape.circle,
                         border: Border.all(color: const Color(0xFF6B4EFF), width: 3),
                         boxShadow: [
-                          BoxShadow( // AVISO: O método 'withOpacity' está depreciado.
-                        color: const Color(0xFF6B4EFF).withAlpha(77), // 0.3 * 255 = 76.5 -> 77
+                          BoxShadow(
+                            color: const Color(0xFF6B4EFF).withAlpha(77),
                             blurRadius: 10,
                             spreadRadius: 2,
                           ),
                         ],
                       ),
                       child: ClipOval(
-                        // Tenta carregar o GIF, se não existir usa o ícone fallback
                         child: Image.asset(
                           'assets/images/hero_avatar.gif',
                           fit: BoxFit.cover,
@@ -442,7 +432,6 @@ class _TelaPerfilState extends State<TelaPerfil> {
                       ),
                     ),
                     const SizedBox(width: 20),
-                    // Informações
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -481,7 +470,7 @@ class _TelaPerfilState extends State<TelaPerfil> {
                                 child: ClipRRect(
                                   borderRadius: const BorderRadius.all(Radius.circular(4)),
                                   child: LinearProgressIndicator(
-                                    value: (xp % 100) / 100, // Calcula % barra de xp
+                                    value: (xp % 100) / 100, 
                                     backgroundColor: isDark ? const Color(0xFF13131A) : Colors.grey.shade200,
                                     color: Colors.amber,
                                     minHeight: 8,
@@ -529,8 +518,7 @@ class _TelaPerfilState extends State<TelaPerfil> {
                         const SizedBox(width: 12),
                         _buildEstatistica(icone: Icons.loop, cor: Colors.redAccent, titulo: 'Consistência', valor: _conSt, isDark: isDark),
                         const SizedBox(width: 12),
-                        // Dummy widget para manter a proporção da largura dos cards
-                        const Expanded(child: SizedBox.shrink()), // const movido para englobar o Widget inteiro
+                        const Expanded(child: SizedBox.shrink()), 
                       ],
                     ),
                   ],
@@ -570,26 +558,14 @@ class _TelaPerfilState extends State<TelaPerfil> {
                           setState(() {
                             _itemEquipadoId = item['id'];
                           });
-                          // Salva a alteração na API no Back-ground
                           InventarioService.equiparItem(item['id']).catchError((e) {
                             debugPrint('Erro ao equipar item no perfil: $e');
                           });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Item equipado com sucesso!'),
-                              backgroundColor: Color(0xFF4ADE80),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
+                          // BUG FIX: Usando utilitário global para evitar empilhamento
+                          showCustomSnackBar(context, 'Item equipado com sucesso!', backgroundColor: const Color(0xFF4ADE80));
                         } else {
-                          // Feedback caso o item esteja bloqueado
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Atinja o Nível ${item['nivelMinimo']} para desbloquear esta armadura!'),
-                              backgroundColor: Colors.redAccent,
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
+                          // BUG FIX: Usando utilitário global para evitar empilhamento
+                          showCustomSnackBar(context, 'Atinja o Nível ${item['nivelMinimo']} para desbloquear esta armadura!', isError: true);
                         }
                       },
                       child: AnimatedContainer(
@@ -597,8 +573,8 @@ class _TelaPerfilState extends State<TelaPerfil> {
                         width: 90,
                         margin: const EdgeInsets.only(right: 12),
                         decoration: BoxDecoration(
-                          color: isEquipado // AVISO: O método 'withOpacity' está depreciado.
-                          ? const Color(0xFF6B4EFF).withAlpha(51) // 0.2 * 255 = 51
+                          color: isEquipado 
+                          ? const Color(0xFF6B4EFF).withAlpha(51) 
                           : corCard,
                           borderRadius: const BorderRadius.all(Radius.circular(16)),
                           border: Border.all(
@@ -612,18 +588,18 @@ class _TelaPerfilState extends State<TelaPerfil> {
                             Icon(
                               isDesbloqueado ? item['icone'] : Icons.lock,
                               color: isDesbloqueado 
-                                ? (isEquipado ? const Color(0xFF6B4EFF) : corTextoPrincipal) // AVISO: O método 'withOpacity' está depreciado.
-                            : Colors.grey.withAlpha(128), // 0.5 * 255 = 127.5 -> 128
+                                ? (isEquipado ? const Color(0xFF6B4EFF) : corTextoPrincipal) 
+                            : Colors.grey.withAlpha(128), 
                               size: 32,
                             ),
                             const SizedBox(height: 8),
                             Text(
                               item['nome'],
-                              textAlign: TextAlign.center, // AVISO: O método 'withOpacity' está depreciado.
+                              textAlign: TextAlign.center, 
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: isEquipado ? FontWeight.bold : FontWeight.normal,
-                        color: isDesbloqueado ? corTextoPrincipal : Colors.grey.withValues(alpha: 0.5),
+                        color: isDesbloqueado ? corTextoPrincipal : Colors.grey.withAlpha(128),
                               ),
                             ),
                             if (isEquipado)
@@ -663,25 +639,14 @@ class _TelaPerfilState extends State<TelaPerfil> {
                           setState(() {
                             _tituloEquipadoId = tituloItem['id'];
                           });
-                          // Salva a alteração na API no Back-ground
                           InventarioService.equiparTitulo(tituloItem['id']).catchError((e) {
                             debugPrint('Erro ao equipar título no perfil: $e');
                           });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Título equipado com sucesso!'),
-                              backgroundColor: Color(0xFF4ADE80),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
+                          // BUG FIX: Usando utilitário global para evitar empilhamento
+                          showCustomSnackBar(context, 'Título equipado com sucesso!', backgroundColor: const Color(0xFF4ADE80));
                         } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Atinja o Nível ${tituloItem['nivelMinimo']} para desbloquear este título!'),
-                              backgroundColor: Colors.redAccent,
-                              duration: const Duration(seconds: 2),
-                            ),
-                          );
+                          // BUG FIX: Usando utilitário global para evitar empilhamento
+                          showCustomSnackBar(context, 'Atinja o Nível ${tituloItem['nivelMinimo']} para desbloquear este título!', isError: true);
                         }
                       },
                       child: AnimatedContainer(
@@ -689,8 +654,8 @@ class _TelaPerfilState extends State<TelaPerfil> {
                         margin: const EdgeInsets.only(right: 12),
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
-                          color: isEquipado // AVISO: O método 'withOpacity' está depreciado.
-                          ? const Color(0xFF6B4EFF).withAlpha(51) // 0.2 * 255 = 51
+                          color: isEquipado 
+                          ? const Color(0xFF6B4EFF).withAlpha(51) 
                           : corCard,
                           borderRadius: const BorderRadius.all(Radius.circular(12)),
                           border: Border.all(
@@ -710,7 +675,7 @@ class _TelaPerfilState extends State<TelaPerfil> {
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: isEquipado ? FontWeight.bold : FontWeight.normal,
-                      color: isDesbloqueado ? corTextoPrincipal : Colors.grey.withAlpha(128), // 0.5 * 255 = 127.5 -> 128
+                      color: isDesbloqueado ? corTextoPrincipal : Colors.grey.withAlpha(128), 
                               ),
                             ),
                           ],
@@ -738,9 +703,7 @@ class _TelaPerfilState extends State<TelaPerfil> {
                   String titulo = tarefa['titulo'] ?? tarefa['title'] ?? tarefa['descricao'] ?? 'Tarefa Concluída';
                   String dataStr = tarefa['data'] ?? tarefa['createdAt'] ?? 'Recentemente';
                   
-                  // Formata caso a data retorne no formato ISO do banco (ex: 2024-10-25T14:30:00Z)
                   if (dataStr.length >= 10 && dataStr.contains('T')) {
-                    // toLocal() garante que se a API devolver a data de Londres (UTC), ela seja convertida para a hora do celular do usuário
                     DateTime dt = DateTime.tryParse(dataStr)?.toLocal() ?? DateTime.now();
                     dataStr = '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')} às ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
                   }
@@ -762,7 +725,6 @@ class _TelaPerfilState extends State<TelaPerfil> {
     );
   }
 
-  // Widget auxiliar para as Estatísticas Superiores
   Widget _buildEstatistica({required IconData icone, required Color cor, required String titulo, required String valor, required bool isDark}) {
     return Expanded(
       child: Container(
@@ -795,7 +757,6 @@ class _TelaPerfilState extends State<TelaPerfil> {
     );
   }
 
-  // Widget auxiliar para as Tarefas Completadas
   Widget _buildTarefaCompletada({required String titulo, required String data, required String xp, required bool isDark}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -809,8 +770,8 @@ class _TelaPerfilState extends State<TelaPerfil> {
         children: [
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration( // AVISO: O método 'withOpacity' está depreciado.
-              color: const Color(0xFF4ADE80).withAlpha(51), // 0.2 * 255 = 51
+            decoration: BoxDecoration( 
+              color: const Color(0xFF4ADE80).withAlpha(51), 
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.check, color: Color(0xFF4ADE80), size: 20),

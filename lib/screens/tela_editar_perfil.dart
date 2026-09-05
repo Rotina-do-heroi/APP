@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/perfil_service.dart';
+import '../main.dart'; // Importa o utilitário showCustomSnackBar
 
 class TelaEditarPerfil extends StatefulWidget {
   final String nomeAtual;
@@ -44,17 +45,15 @@ class _TelaEditarPerfilState extends State<TelaEditarPerfil> {
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Perfil atualizado com sucesso!'), backgroundColor: Colors.green),
-        );
+        // BUG FIX: Usando utilitário global para evitar empilhamento
+        showCustomSnackBar(context, 'Perfil atualizado com sucesso!', backgroundColor: Colors.green);
         Navigator.of(context).pop(true);
       }
     } catch (e) {
       if (mounted) {
-        final mensagemErro = e.toString().replaceAll('Exception: ', '');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao atualizar: $mensagemErro'), backgroundColor: Colors.redAccent),
-        );
+        final mensagemErro = e.toString().replaceAll('Exception: ', '').replaceAll('PerfilException: ', '');
+        // BUG FIX: Usando utilitário global para erros
+        showCustomSnackBar(context, 'Erro ao atualizar: $mensagemErro', isError: true);
       }
     } finally {
       if (mounted) {
@@ -76,7 +75,7 @@ class _TelaEditarPerfilState extends State<TelaEditarPerfil> {
         elevation: 0,
       ),
       backgroundColor: isDark ? const Color(0xFF1A1A24) : const Color(0xFFF3F4F6),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -112,13 +111,16 @@ class _TelaEditarPerfilState extends State<TelaEditarPerfil> {
                 decoration: BoxDecoration(
                   color: const Color(0xFF6B4EFF),
                   borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(color: const Color(0xFF6B4EFF).withAlpha(77), blurRadius: 10, spreadRadius: 2),
+                  ],
                 ),
                 child: _isLoading
                     ? const Center(child: SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3)))
                     : const Text(
                         'SALVAR ALTERAÇÕES',
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1.2),
                       ),
               ),
             ),

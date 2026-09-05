@@ -4,7 +4,7 @@ import '../widgets/hero_perfil.dart';
 import '../widgets/card_da_missao.dart';
 import '../widgets/mission_card.dart';
 import '../services/missao_service.dart';
-import '../main.dart'; // Importa os Notifiers Globais
+import '../main.dart'; // Importa os Notifiers Globais e showCustomSnackBar
 
 final ValueNotifier<List<Missao>> missoesNotifier = ValueNotifier([]);
 final ValueNotifier<Missao?> missaoSelecionadaNotifier = ValueNotifier(null);
@@ -63,9 +63,14 @@ class _TelaInicialTarefasState extends State<TelaInicialTarefas> {
                 Navigator.pop(dialogContext);
                 missoesNotifier.value = List.from(missoesNotifier.value)..remove(missao);
                 if (missaoSelecionadaNotifier.value == missao) missaoSelecionadaNotifier.value = null;
+                
+                // BUG FIX: Usando utilitário global para evitar empilhamento
+                showCustomSnackBar(context, 'Missão excluída com sucesso!', backgroundColor: Colors.redAccent);
+
                 if (missao.id != null) await MissaoService.deletarMissao(missao.id!);
               },
-              child: const Text('Excluir'),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+              child: const Text('Excluir', style: TextStyle(color: Colors.white)),
             ),
           ],
         );
@@ -93,7 +98,6 @@ class _TelaInicialTarefasState extends State<TelaInicialTarefas> {
               ],
             ),
             const SizedBox(height: 16),
-            // Calendário (Simplificado para brevidade)
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -137,26 +141,22 @@ class _TelaInicialTarefasState extends State<TelaInicialTarefas> {
                         },
                         onDeletarMissao: () => _deletarMissao(missao),
                         onFocoRapido: () {
-                          // TRAVA DE SEGURANÇA: Verifica se o timer global está ocupado ou não resetado
                           if (isTimerRodandoGlobal.value) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Já existe um hiperfoco em andamento! Finalize-o primeiro.'), backgroundColor: Colors.redAccent),
-                            );
+                            showCustomSnackBar(context, 'Já existe um hiperfoco em andamento!', isError: true);
                             return;
                           }
-
                           if (segundosRestantesGlobal.value < (25 * 60)) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('O timer ainda não foi resetado. Volte para a aba Foco.'), backgroundColor: Colors.orange),
-                            );
+                            showCustomSnackBar(context, 'O timer ainda não foi resetado. Volte para a aba Foco.', backgroundColor: Colors.orange);
                             return;
                           }
-
-                          if (missao.concluida) return;
+                          if (missao.concluida) {
+                            showCustomSnackBar(context, 'Esta missão já foi concluída!', backgroundColor: Colors.orange);
+                            return;
+                          }
                           
                           missaoSelecionadaNotifier.value = missao;
                           autoStartTimerNotifier.value = true;
-                          abaAtualNotifier.value = 1; // Navega para Foco
+                          abaAtualNotifier.value = 1;
                         },
                       );
                     },

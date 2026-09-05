@@ -16,6 +16,24 @@ final ValueNotifier<ThemeMode> temaNotifier = ValueNotifier(ThemeMode.dark);
 // Notifier global para controlar a navegação das abas
 final ValueNotifier<int> abaAtualNotifier = ValueNotifier(0);
 
+/// Utilitário Global para exibir SnackBar sem empilhamento (Bug Fix)
+void showCustomSnackBar(BuildContext context, String message, {bool isError = false, Color? backgroundColor}) {
+  final messenger = ScaffoldMessenger.of(context);
+  
+  // SOLUÇÃO: Limpa todas as SnackBars da fila imediatamente antes de mostrar a nova.
+  messenger.clearSnackBars();
+  
+  messenger.showSnackBar(
+    SnackBar(
+      content: Text(message, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+      backgroundColor: backgroundColor ?? (isError ? Colors.redAccent : const Color(0xFF6B4EFF)),
+      duration: const Duration(seconds: 2),
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    ),
+  );
+}
+
 // Notifiers globais para o Estado do Timer (Sincronização entre telas)
 final ValueNotifier<bool> isTimerRodandoGlobal = ValueNotifier(false);
 final ValueNotifier<int> segundosRestantesGlobal = ValueNotifier(25 * 60);

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/missao.dart';
+import '../main.dart'; // Importa o utilitário showCustomSnackBar
 
 class MissionCard extends StatefulWidget {
   final Missao missao;
@@ -60,11 +61,11 @@ class _MissionCardState extends State<MissionCard> {
         return AlertDialog(
           backgroundColor: isDark ? const Color(0xFF1E1E2A) : Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Row(
+          title: const Row(
             children: [
               Icon(Icons.warning_amber_rounded, color: Colors.orangeAccent),
               SizedBox(width: 8),
-              Text('Deletar Missão', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
+              Text('Deletar Missão'),
             ],
           ),
           content: Text(
@@ -141,12 +142,7 @@ class _MissionCardState extends State<MissionCard> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                               decoration: BoxDecoration(
-                                color: Color.fromRGBO(
-                                  corPrioridade.r.toInt(),
-                                  corPrioridade.g.toInt(),
-                                  corPrioridade.b.toInt(),
-                                  0.18,
-                                ),
+                                color: corPrioridade.withAlpha(46),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
@@ -159,11 +155,10 @@ class _MissionCardState extends State<MissionCard> {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            // Badge de Sessões de Foco
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF6B4EFF).withValues(alpha: 0.18),
+                                color: const Color(0xFF6B4EFF).withAlpha(46),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Row(
@@ -207,16 +202,14 @@ class _MissionCardState extends State<MissionCard> {
                   const SizedBox(width: 12),
                   GestureDetector(
                     onTap: () {
-                      // Verifica se o usuário está tentando concluir sem ter as sessões necessárias
                       if (!widget.missao.concluida && widget.missao.sessoesConcluidas < widget.missao.sessoesNecessarias) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Use o Modo Foco! Faltam ${widget.missao.sessoesNecessarias - widget.missao.sessoesConcluidas} sessão(ões).'),
-                            backgroundColor: Colors.orangeAccent,
-                            duration: const Duration(seconds: 3),
-                          ),
+                        // BUG FIX: Usando utilitário global para evitar empilhamento
+                        showCustomSnackBar(
+                          context, 
+                          'Use o Modo Foco! Faltam ${widget.missao.sessoesNecessarias - widget.missao.sessoesConcluidas} sessão(ões).',
+                          isError: true
                         );
-                        return; // Impede que o código continue e marque como concluída
+                        return;
                       }
 
                       setState(() {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../main.dart'; // Importa o utilitário showCustomSnackBar
 
 class TelaRecuperarSenha extends StatefulWidget {
   const TelaRecuperarSenha({super.key});
@@ -97,14 +98,9 @@ class _TelaRecuperarSenhaState extends State<TelaRecuperarSenha> {
     }
   }
 
+  /// BUG FIX: Usando utilitário global para evitar empilhamento de SnackBars
   void _showSnackBar(String message, Color backgroundColor) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: backgroundColor,
-        duration: const Duration(seconds: 3),
-      ),
-    );
+    showCustomSnackBar(context, message, backgroundColor: backgroundColor);
   }
 
   @override
@@ -280,7 +276,7 @@ class _TelaRecuperarSenhaState extends State<TelaRecuperarSenha> {
           color: const Color(0xFF6B4EFF),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
-            BoxShadow(color: const Color(0xFF6B4EFF).withValues(alpha: 0.4), blurRadius: 12, spreadRadius: 2),
+            BoxShadow(color: const Color(0xFF6B4EFF).withAlpha(102), blurRadius: 12, spreadRadius: 2),
           ],
         ),
         child: _isLoading

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../main.dart'; // Para navegar até a TelaPrincipal após o login
-import 'tela_recuperar_senha.dart'; // Para navegar até a tela de recuperação de senha
-import '../services/auth_service.dart'; // Importa o novo serviço de autenticação
+import '../main.dart'; // Importa o utilitário showCustomSnackBar
+import 'tela_recuperar_senha.dart'; 
+import '../services/auth_service.dart'; 
 
 class TelaLogin extends StatefulWidget {
   const TelaLogin({super.key});
@@ -11,11 +11,9 @@ class TelaLogin extends StatefulWidget {
 }
 
 class _TelaLoginState extends State<TelaLogin> {
-  // Variável para alternar entre "Login" e "Cadastro"
   bool _isLogin = true;
-  bool _isLoading = false; // Para controlar o estado de carregamento
+  bool _isLoading = false; 
 
-  // Controladores para capturar os textos dos campos
   final TextEditingController _nomeController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _senhaController = TextEditingController();
@@ -55,22 +53,19 @@ class _TelaLoginState extends State<TelaLogin> {
         );
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Herói criado com sucesso! Faça seu login.'), backgroundColor: Colors.green),
-          );
+          // BUG FIX: Usando utilitário global para evitar empilhamento
+          showCustomSnackBar(context, 'Herói criado com sucesso! Faça seu login.', backgroundColor: Colors.green);
           setState(() {
-            _isLogin = true; // Muda a visualização para Login
-            _senhaController.clear(); // Limpa a senha por segurança
+            _isLogin = true; 
+            _senhaController.clear(); 
           });
         }
       }
     } catch (e) {
       if (mounted) {
-        // Remove o prefixo padrão da classe Exception antes de mostrar na tela
-        final mensagemErro = e.toString().replaceAll('Exception: ', '');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(mensagemErro), backgroundColor: Colors.redAccent),
-        );
+        final mensagemErro = e.toString().replaceAll('Exception: ', '').replaceAll('AuthException: ', '');
+        // BUG FIX: Usando utilitário global para evitar empilhamento de erros
+        showCustomSnackBar(context, mensagemErro, isError: true);
       }
     } finally {
       if (mounted) {
@@ -95,147 +90,75 @@ class _TelaLoginState extends State<TelaLogin> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Ícone / Logo do app
-                const Icon(
-                  Icons.videogame_asset,
-                  size: 80,
-                  color: Color(0xFF6B4EFF),
-                ),
+                const Icon(Icons.videogame_asset, size: 80, color: Color(0xFF6B4EFF)),
                 const SizedBox(height: 24),
-                
-                // Título Gamificado
                 Text(
                   _isLogin ? 'Bem-vindo de volta, Herói!' : 'Inicie sua Jornada',
                   textAlign: TextAlign.center,
-                style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.black87,
-                    fontFamily: 'monospace',
-                  ),
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87, fontFamily: 'monospace'),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  _isLogin 
-                      ? 'Faça login para continuar sua evolução.' 
-                      : 'Crie sua conta e transforme sua rotina em jogo.',
+                  _isLogin ? 'Faça login para continuar sua evolução.' : 'Crie sua conta e transforme sua rotina em jogo.',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.grey,
-                    fontSize: 14,
-                  ),
+                  style: const TextStyle(color: Colors.grey, fontSize: 14),
                 ),
                 const SizedBox(height: 48),
 
-                // Campo de Nome (Apenas no Cadastro)
                 if (!_isLogin) ...[
-                  _buildTextField(
-                    label: 'Nome de Herói',
-                    icone: Icons.person_outline,
-                    obscureText: false,
-                    isDark: isDark,
-                    controller: _nomeController,
-                  ),
+                  _buildTextField(label: 'Nome de Herói', icone: Icons.person_outline, obscureText: false, isDark: isDark, controller: _nomeController),
                   const SizedBox(height: 16),
                 ],
 
-                // Campo de E-mail
-                _buildTextField(
-                  label: 'E-mail',
-                  icone: Icons.email_outlined,
-                  obscureText: false,
-                  isDark: isDark,
-                  controller: _emailController,
-                ),
+                _buildTextField(label: 'E-mail', icone: Icons.email_outlined, obscureText: false, isDark: isDark, controller: _emailController),
                 const SizedBox(height: 16),
 
-                // Campo de Senha
-                _buildTextField(
-                  label: 'Senha',
-                  icone: Icons.lock_outline,
-                  obscureText: true,
-                  isDark: isDark,
-                  controller: _senhaController,
-                ),
+                _buildTextField(label: 'Senha', icone: Icons.lock_outline, obscureText: true, isDark: isDark, controller: _senhaController),
                 const SizedBox(height: 32),
 
-                // Botão de Ação Principal
                 GestureDetector(
-                  onTap: _isLoading ? null : _entrar, // Desabilita o clique durante o carregamento
+                  onTap: _isLoading ? null : _entrar,
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     decoration: BoxDecoration(
                       color: const Color(0xFF6B4EFF),
-                      borderRadius: BorderRadius.circular(12), // AVISO: O método 'withOpacity' está depreciado.
+                      borderRadius: BorderRadius.circular(12),
                       boxShadow: [
-                        BoxShadow( // 0.4 * 255 = 102
-                          color: const Color(0xFF6B4EFF).withAlpha(102),
-                          blurRadius: 12,
-                          spreadRadius: 2,
-                        ),
+                        BoxShadow(color: const Color(0xFF6B4EFF).withAlpha(102), blurRadius: 12, spreadRadius: 2),
                       ],
                     ),
                     child: _isLoading
-                        ? const Center(
-                            child: SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
-                            ),
-                          )
+                        ? const Center(child: SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3)))
                         : Text(
                             _isLogin ? 'ENTRAR' : 'CRIAR CONTA',
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1.5,
-                            ),
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1.5),
                           ),
                   ),
                 ),
                 const SizedBox(height: 24),
 
-                // Alternar entre Login e Cadastro
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      _isLogin ? 'Não tem uma conta? ' : 'Já é um herói? ',
-                      style: const TextStyle(color: Colors.grey),
-                    ),
+                    Text(_isLogin ? 'Não tem uma conta? ' : 'Já é um herói? ', style: const TextStyle(color: Colors.grey)),
                     GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _isLogin = !_isLogin;
-                        });
-                      },
-                      child: Text(
-                        _isLogin ? 'Cadastre-se' : 'Entrar',
-                        style: const TextStyle(
-                          color: Color(0xFF4ADE80), // Verde de destaque
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      onTap: () => setState(() => _isLogin = !_isLogin),
+                      child: const Text('Cadastre-se', style: TextStyle(color: Color(0xFF4ADE80), fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),
                 
-                // Botão "Esqueci minha senha"
                 if (_isLogin) ...[
                   const SizedBox(height: 16),
                   GestureDetector(
                     onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (context) => const TelaRecuperarSenha()),
-                      );
+                      Navigator.of(context).push(MaterialPageRoute(builder: (context) => const TelaRecuperarSenha()));
                     },
                     child: const Text(
                       'Esqueci minha senha',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontWeight: FontWeight.w500,
-                        decoration: TextDecoration.underline,
-                      ),
+                      style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500, decoration: TextDecoration.underline),
                     ),
                   ),
                 ],
@@ -247,7 +170,6 @@ class _TelaLoginState extends State<TelaLogin> {
     );
   }
 
-  // Função construtora padronizada para os Inputs (estilo dark)
   Widget _buildTextField({required String label, required IconData icone, required bool obscureText, required bool isDark, TextEditingController? controller}) {
     return TextField(
       controller: controller,
@@ -259,14 +181,8 @@ class _TelaLoginState extends State<TelaLogin> {
         prefixIcon: Icon(icone, color: Colors.grey),
         filled: true,
         fillColor: isDark ? const Color(0xFF1E1E2A) : Colors.white,
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: isDark ? const Color(0xFF252536) : Colors.grey.shade300, width: 1.5),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF6B4EFF), width: 1.5),
-        ),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: isDark ? const Color(0xFF252536) : Colors.grey.shade300, width: 1.5)),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF6B4EFF), width: 1.5)),
       ),
     );
   }

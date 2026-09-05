@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/missao.dart';
 import 'tela_inicial.dart';
-import '../main.dart';
+import '../main.dart'; // Importa showCustomSnackBar e sincronizarProgresso
 import '../controllers/hiperfoco_controller.dart';
 import '../widgets/aba_modo_widget.dart';
 import '../widgets/tarefa_card_widget.dart';
@@ -29,8 +29,11 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
     _controller = HiperfocoController(
       onShowSnackbar: (message, isSuccess) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message), backgroundColor: isSuccess ? Colors.green : Colors.orangeAccent),
+        // BUG FIX: Usando utilitário global para evitar empilhamento de mensagens do Timer
+        showCustomSnackBar(
+          context, 
+          message, 
+          backgroundColor: isSuccess ? Colors.green : Colors.orangeAccent
         );
       },
       onMissaoConcluida: (missao, ganhouConsistencia) {

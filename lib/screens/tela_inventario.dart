@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/inventario_service.dart';
+import '../main.dart'; // Importa o utilitário showCustomSnackBar
 
 class TelaInventario extends StatefulWidget {
   const TelaInventario({super.key});
@@ -9,7 +10,6 @@ class TelaInventario extends StatefulWidget {
 }
 
 class _TelaInventarioState extends State<TelaInventario> {
-  // O mesmo inventário padrão usado no Perfil
   final List<Map<String, dynamic>> _inventario = [
     {'id': 0, 'nome': 'Sem armadura', 'icone': Icons.accessibility_new, 'desbloqueado': true},
     {'id': 1, 'nome': 'Set de Couro', 'icone': Icons.security, 'desbloqueado': false},
@@ -24,7 +24,6 @@ class _TelaInventarioState extends State<TelaInventario> {
   int _nivelUsuario = 1;
   bool _isLoading = true;
 
-  // Lista de Títulos e níveis necessários para desbloqueá-los
   final List<Map<String, dynamic>> _titulos = [
     {'id': 1, 'nome': 'Iniciante da Jornada', 'nivelMinimo': 1},
     {'id': 2, 'nome': 'Aprendiz do Tempo', 'nivelMinimo': 5},
@@ -38,19 +37,13 @@ class _TelaInventarioState extends State<TelaInventario> {
     {'id': 10, 'nome': 'Lenda da Consistência', 'nivelMinimo': 100},
   ];
 
-  // Função disparada ao clicar no botão "Equipar" para Títulos
   Future<void> _equiparTitulo(int idTitulo) async {
     setState(() {
       _tituloEquipadoId = idTitulo;
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Título equipado com sucesso!'),
-        backgroundColor: Color(0xFF4ADE80), // Verde
-        duration: Duration(seconds: 2),
-      ),
-    );
+    // BUG FIX: Usando utilitário global para evitar empilhamento
+    showCustomSnackBar(context, 'Título equipado com sucesso!', backgroundColor: const Color(0xFF4ADE80));
 
     try {
       await InventarioService.equiparTitulo(idTitulo);
@@ -66,7 +59,6 @@ class _TelaInventarioState extends State<TelaInventario> {
   }
 
   Future<void> _fetchInventario() async {
-
     try {
       final data = await InventarioService.buscarInventario();
       if (!mounted) return;
@@ -95,22 +87,14 @@ class _TelaInventarioState extends State<TelaInventario> {
     }
   }
 
-  // Função disparada ao clicar no botão "Equipar"
   Future<void> _equiparItem(int idItem) async {
-    // Atualiza a tela imediatamente para dar feedback rápido (Optimistic UI)
     setState(() {
       _itemEquipadoId = idItem;
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Item equipado com sucesso!'),
-        backgroundColor: Color(0xFF4ADE80), // Verde
-        duration: Duration(seconds: 2),
-      ),
-    );
+    // BUG FIX: Usando utilitário global para evitar empilhamento
+    showCustomSnackBar(context, 'Item equipado com sucesso!', backgroundColor: const Color(0xFF4ADE80));
 
-    // Faz a requisição no background para atualizar no banco de dados
     try {
       await InventarioService.equiparItem(idItem);
     } catch (e) {
@@ -150,45 +134,52 @@ class _TelaInventarioState extends State<TelaInventario> {
                       bool isEquipado = item['id'] == _itemEquipadoId;
                       bool isDesbloqueado = item['desbloqueado'];
 
-                      return Card(
-                        color: corCard,
-                        margin: const EdgeInsets.only(bottom: 12),
-                        shape: RoundedRectangleBorder(
-                          side: BorderSide(color: isEquipado ? const Color(0xFF6B4EFF) : Colors.transparent, width: 2),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: ListTile(
-                            leading: Icon(
-                              isDesbloqueado ? item['icone'] : Icons.lock,
-                              color: isDesbloqueado ? (isEquipado ? const Color(0xFF6B4EFF) : Colors.amber) : Colors.grey.withValues(alpha: 0.5),
-                              size: 32,
-                            ),
-                            title: Text(
-                              item['nome'],
-                              style: TextStyle(
-                                color: isDesbloqueado ? corTextoPrincipal : Colors.grey,
-                                fontWeight: isEquipado ? FontWeight.bold : FontWeight.normal,
+                      return GestureDetector(
+                        onTap: () {
+                          if (!isDesbloqueado) {
+                            showCustomSnackBar(context, 'Você ainda não possui este equipamento! 🛡️', isError: true);
+                          }
+                        },
+                        child: Card(
+                          color: corCard,
+                          margin: const EdgeInsets.only(bottom: 12),
+                          shape: RoundedRectangleBorder(
+                            side: BorderSide(color: isEquipado ? const Color(0xFF6B4EFF) : Colors.transparent, width: 2),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: ListTile(
+                              leading: Icon(
+                                isDesbloqueado ? item['icone'] : Icons.lock,
+                                color: isDesbloqueado ? (isEquipado ? const Color(0xFF6B4EFF) : Colors.amber) : Colors.grey.withAlpha(128),
+                                size: 32,
                               ),
-                            ),
-                            subtitle: Text(
-                              isEquipado ? 'Item Equipado' : (isDesbloqueado ? 'Toque para equipar' : 'Nível insuficiente'),
-                              style: TextStyle(
-                                color: isEquipado ? const Color(0xFF4ADE80) : Colors.grey,
+                              title: Text(
+                                item['nome'],
+                                style: TextStyle(
+                                  color: isDesbloqueado ? corTextoPrincipal : Colors.grey,
+                                  fontWeight: isEquipado ? FontWeight.bold : FontWeight.normal,
+                                ),
                               ),
+                              subtitle: Text(
+                                isEquipado ? 'Item Equipado' : (isDesbloqueado ? 'Toque para equipar' : 'Nível insuficiente'),
+                                style: TextStyle(
+                                  color: isEquipado ? const Color(0xFF4ADE80) : Colors.grey,
+                                ),
+                              ),
+                              trailing: isDesbloqueado && !isEquipado
+                                  ? ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFF6B4EFF).withAlpha(51),
+                                        foregroundColor: const Color(0xFF6B4EFF),
+                                        elevation: 0,
+                                      ),
+                                      onPressed: () => _equiparItem(item['id']),
+                                      child: const Text('Equipar', style: TextStyle(fontWeight: FontWeight.bold)),
+                                    )
+                                  : null,
                             ),
-                            trailing: isDesbloqueado && !isEquipado
-                                ? ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF6B4EFF).withValues(alpha: 0.2),
-                                      foregroundColor: const Color(0xFF6B4EFF),
-                                      elevation: 0,
-                                    ),
-                                    onPressed: () => _equiparItem(item['id']),
-                                    child: const Text('Equipar', style: TextStyle(fontWeight: FontWeight.bold)),
-                                  )
-                                : null,
                           ),
                         ),
                       );
@@ -207,45 +198,52 @@ class _TelaInventarioState extends State<TelaInventario> {
                       bool isDesbloqueado = _nivelUsuario >= tituloItem['nivelMinimo'];
                       bool isEquipado = tituloItem['id'] == _tituloEquipadoId;
 
-                      return Card(
-                        color: corCard,
-                        margin: const EdgeInsets.only(bottom: 12),
-                        shape: RoundedRectangleBorder(
-                          side: BorderSide(color: isEquipado ? const Color(0xFF6B4EFF) : Colors.transparent, width: 2),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: ListTile(
-                            leading: Icon(
-                              isDesbloqueado ? Icons.military_tech : Icons.lock,
-                              color: isDesbloqueado ? (isEquipado ? const Color(0xFF6B4EFF) : Colors.amber) : Colors.grey.withValues(alpha: 0.5),
-                              size: 32,
-                            ),
-                            title: Text(
-                              tituloItem['nome'],
-                              style: TextStyle(
-                                color: isDesbloqueado ? corTextoPrincipal : Colors.grey,
-                                fontWeight: isEquipado ? FontWeight.bold : FontWeight.normal,
+                      return GestureDetector(
+                        onTap: () {
+                          if (!isDesbloqueado) {
+                            showCustomSnackBar(context, 'Alcance o nível ${tituloItem['nivelMinimo']} para desbloquear! 🏆', isError: true);
+                          }
+                        },
+                        child: Card(
+                          color: corCard,
+                          margin: const EdgeInsets.only(bottom: 12),
+                          shape: RoundedRectangleBorder(
+                            side: BorderSide(color: isEquipado ? const Color(0xFF6B4EFF) : Colors.transparent, width: 2),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: ListTile(
+                              leading: Icon(
+                                isDesbloqueado ? Icons.military_tech : Icons.lock,
+                                color: isDesbloqueado ? (isEquipado ? const Color(0xFF6B4EFF) : Colors.amber) : Colors.grey.withAlpha(128),
+                                size: 32,
                               ),
-                            ),
-                            subtitle: Text(
-                              isEquipado ? 'Título Equipado' : (isDesbloqueado ? 'Toque para equipar' : 'Requer Nível ${tituloItem['nivelMinimo']}'),
-                              style: TextStyle(
-                                color: isEquipado ? const Color(0xFF4ADE80) : Colors.grey,
+                              title: Text(
+                                tituloItem['nome'],
+                                style: TextStyle(
+                                  color: isDesbloqueado ? corTextoPrincipal : Colors.grey,
+                                  fontWeight: isEquipado ? FontWeight.bold : FontWeight.normal,
+                                ),
                               ),
+                              subtitle: Text(
+                                isEquipado ? 'Título Equipado' : (isDesbloqueado ? 'Toque para equipar' : 'Requer Nível ${tituloItem['nivelMinimo']}'),
+                                style: TextStyle(
+                                  color: isEquipado ? const Color(0xFF4ADE80) : Colors.grey,
+                                ),
+                              ),
+                              trailing: isDesbloqueado && !isEquipado
+                                  ? ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFF6B4EFF).withAlpha(51),
+                                        foregroundColor: const Color(0xFF6B4EFF),
+                                        elevation: 0,
+                                      ),
+                                      onPressed: () => _equiparTitulo(tituloItem['id']),
+                                      child: const Text('Equipar', style: TextStyle(fontWeight: FontWeight.bold)),
+                                    )
+                                  : null,
                             ),
-                            trailing: isDesbloqueado && !isEquipado
-                                ? ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF6B4EFF).withValues(alpha: 0.2),
-                                      foregroundColor: const Color(0xFF6B4EFF),
-                                      elevation: 0,
-                                    ),
-                                    onPressed: () => _equiparTitulo(tituloItem['id']),
-                                    child: const Text('Equipar', style: TextStyle(fontWeight: FontWeight.bold)),
-                                  )
-                                : null,
                           ),
                         ),
                       );
