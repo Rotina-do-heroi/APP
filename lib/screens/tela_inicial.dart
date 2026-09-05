@@ -3,6 +3,7 @@ import '../models/missao.dart';
 import '../widgets/hero_perfil.dart';
 import '../widgets/card_da_missao.dart';
 import '../widgets/mission_card.dart';
+import '../widgets/empty_state_missoes.dart'; // Importa o novo Empty State
 import '../services/missao_service.dart';
 import '../main.dart'; // Importa os Notifiers Globais e showCustomSnackBar
 
@@ -64,7 +65,6 @@ class _TelaInicialTarefasState extends State<TelaInicialTarefas> {
                 missoesNotifier.value = List.from(missoesNotifier.value)..remove(missao);
                 if (missaoSelecionadaNotifier.value == missao) missaoSelecionadaNotifier.value = null;
                 
-                // BUG FIX: Usando utilitário global para evitar empilhamento
                 showCustomSnackBar(context, 'Missão excluída com sucesso!', backgroundColor: Colors.redAccent);
 
                 if (missao.id != null) await MissaoService.deletarMissao(missao.id!);
@@ -125,6 +125,11 @@ class _TelaInicialTarefasState extends State<TelaInicialTarefas> {
                 valueListenable: missoesNotifier,
                 builder: (context, missoesAtuais, _) {
                   final missoesDoDia = missoesAtuais.where((m) => m.diasRepeticao.isEmpty ? _diaSelecionado == DateTime.now().weekday : m.diasRepeticao.contains(_diaSelecionado)).toList();
+
+                  // SOLUÇÃO: Se a lista estiver vazia, exibe o Empty State
+                  if (missoesDoDia.isEmpty) {
+                    return const EmptyStateMissoes();
+                  }
 
                   return ListView.builder(
                     itemCount: missoesDoDia.length,
