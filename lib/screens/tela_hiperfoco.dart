@@ -35,7 +35,13 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
       },
       onMissaoConcluida: (missao, ganhouConsistencia) {
         if (!mounted) return;
-        HiperfocoDialogs.mostrarParabens(context, missao, ganhouConsistencia);
+        // BUG FIX: O tempo só volta após clicar no botão do diálogo
+        HiperfocoDialogs.mostrarParabens(
+          context, 
+          missao, 
+          ganhouConsistencia,
+          onContinuar: () => _controller.confirmarFimSessao(),
+        );
       },
       onSincronizarProgresso: () async {
         if (!mounted) return;
@@ -55,7 +61,7 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
 
   @override
   void dispose() {
-    _controller.dispose(); // Delega a limpeza do Timer e Observers para a própria classe de controle
+    _controller.dispose();
     super.dispose();
   }
 
@@ -63,7 +69,6 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getString('user_id') ?? '';
     final chaveTutorial = 'primeiro_acesso_hiperfoco_$userId';
-    // Puxa se é o primeiro acesso na tela de Hiperfoco
     final bool primeiroAcesso = prefs.getBool(chaveTutorial) ?? true;
 
     if (primeiroAcesso) {
@@ -74,8 +79,6 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
       await prefs.setBool(chaveTutorial, false);
     }
   }
-
-  // --- INTERFACE VISUAL ---
 
   @override
   Widget build(BuildContext context) {
@@ -100,25 +103,18 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
                     const SizedBox(width: 8),
                     Text(
                       'Modo Hiperfoco',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: corTextoPrincipal,
-                        fontFamily: 'monospace', 
-                      ),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: corTextoPrincipal, fontFamily: 'monospace'),
                     ),
                   ],
                 ),
                 IconButton(
                   icon: Icon(Icons.help_outline, color: isDark ? Colors.blueAccent : Colors.blue),
                     onPressed: () => HiperfocoTutorial.showTutorial(context, keyAbas: _keyAbas, keyTimer: _keyTimer, keyControles: _keyControles),
-                  tooltip: 'Ver Tutorial',
                 ),
               ],
             ),
             const SizedBox(height: 12),
 
-            // Barra de XP Dinâmica e Global
             AnimatedBuilder(
               animation: Listenable.merge([xpNotifier, nivelNotifier]),
               builder: (context, _) {
@@ -132,7 +128,7 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
                       child: ClipRRect(
                         borderRadius: const BorderRadius.all(Radius.circular(4)),
                         child: LinearProgressIndicator(
-                          value: (xp % 100) / 100, // Calcula a porcentagem da barra
+                          value: (xp % 100) / 100,
                           backgroundColor: isDark ? const Color(0xFF13131A) : Colors.grey.shade300,
                           color: Colors.amber,
                           minHeight: 8,
@@ -149,10 +145,7 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
 
             Container(
               padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
-              decoration: BoxDecoration(
-                color: corCard, 
-                borderRadius: BorderRadius.circular(24),
-              ),
+              decoration: BoxDecoration(color: corCard, borderRadius: BorderRadius.circular(24)),
               child: AnimatedBuilder(
                 animation: _controller,
                 builder: (context, _) {
@@ -165,7 +158,6 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
                         child: SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
                           child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               AbaModoWidget(indice: 0, titulo: 'Foco', icone: Icons.my_location, isSelecionado: _controller.modoAtual == 0, corAtual: _controller.corAtual, onTap: () => _controller.mudarModo(0)),
                               AbaModoWidget(indice: 1, titulo: 'Pausa Curta', icone: Icons.coffee, isSelecionado: _controller.modoAtual == 1, corAtual: _controller.corAtual, onTap: () => _controller.mudarModo(1)),
@@ -178,8 +170,7 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
 
                       Container(
                         key: _keyTimer,
-                        width: 240,
-                        height: 240,
+                        width: 240, height: 240,
                         decoration: BoxDecoration(shape: BoxShape.circle, color: corFundoSub, border: Border.all(color: corBorda, width: 12)),
                         child: Center(
                           child: Column(
@@ -195,7 +186,7 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
                                 children: [
                                   Icon(_controller.modoAtual == 0 ? Icons.my_location : _controller.modoAtual == 1 ? Icons.coffee : Icons.nightlight_round, color: _controller.corAtual, size: 16),
                                   const SizedBox(width: 4),
-                                  Text(_controller.modoAtual == 0 ? 'Modo Foco' : _controller.modoAtual == 1 ? 'Descanse' : 'Pausa Longa', style: TextStyle(color: _controller.corAtual, fontWeight: FontWeight.bold)),
+                                  Text(_controller.modoAtual == 0 ? 'Modo Foco' : 'Descanse', style: TextStyle(color: _controller.corAtual, fontWeight: FontWeight.bold)),
                                 ],
                               )
                             ],
@@ -219,11 +210,6 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
                           Text('+${_controller.calcularBonusCombo()} XP', style: TextStyle(color: _controller.comboAtual >= 2 ? Colors.amber : Colors.grey, fontWeight: FontWeight.bold)),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _controller.comboAtual >= 3 ? 'Combo Máximo Atingido! 🔥' : '${3 - _controller.comboAtual} sessão(ões) para combo máximo', 
-                        style: TextStyle(color: _controller.comboAtual >= 3 ? Colors.amber : Colors.grey, fontSize: 12, fontWeight: _controller.comboAtual >= 3 ? FontWeight.bold : FontWeight.normal)
-                      ),
                       const SizedBox(height: 32),
 
                       Row(
@@ -240,9 +226,9 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
                             onTap: _controller.iniciarPausarTimer,
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
-                              decoration: BoxDecoration( // AVISO: O método 'withOpacity' está depreciado.
+                              decoration: BoxDecoration(
                                 color: _controller.corAtual, borderRadius: BorderRadius.circular(30),
-                                boxShadow: [BoxShadow(color: _controller.corAtual.withAlpha(102), blurRadius: 20, spreadRadius: 2)], // 0.4 * 255 = 102
+                                boxShadow: [BoxShadow(color: _controller.corAtual.withAlpha(102), blurRadius: 20, spreadRadius: 2)],
                               ),
                               child: Row(
                                 children: [
@@ -262,21 +248,13 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
                         ],
                       ),
                       
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 24),
-                        child: Divider(color: corBorda, thickness: 2),
-                      ),
+                      const Padding(padding: EdgeInsets.symmetric(vertical: 24), child: Divider(thickness: 2)),
                       
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            children: [
-                              Icon(Icons.receipt_long, color: corTextoPrincipal, size: 20),
-                              const SizedBox(width: 8),
-                              Text('Lista de Tarefas', style: TextStyle(color: corTextoPrincipal, fontWeight: FontWeight.bold, fontSize: 16)),
-                            ],
-                          ),
+                          Icon(Icons.receipt_long, color: corTextoPrincipal, size: 20),
+                          const SizedBox(width: 8),
+                          Text('Lista de Tarefas', style: TextStyle(color: corTextoPrincipal, fontWeight: FontWeight.bold, fontSize: 16)),
                         ],
                       ),
                       const SizedBox(height: 16),
@@ -285,9 +263,8 @@ class _TelaHiperfocoState extends State<TelaHiperfoco> {
                         valueListenable: missoesNotifier,
                         builder: (context, missoesAtuais, _) {
                           if (missoesAtuais.isEmpty) {
-                            return const Center(child: Padding(padding: EdgeInsets.all(16), child: Text('Nenhuma tarefa pendente.', style: TextStyle(color: Colors.grey))));
+                            return const Center(child: Text('Nenhuma tarefa pendente.', style: TextStyle(color: Colors.grey)));
                           }
-                          
                           return ValueListenableBuilder<Missao?>(
                             valueListenable: missaoSelecionadaNotifier,
                             builder: (context, missaoSelecionada, _) {

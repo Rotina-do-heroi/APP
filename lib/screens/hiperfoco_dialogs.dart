@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import '../models/missao.dart';
 
 class HiperfocoDialogs {
-  static void mostrarParabens(BuildContext context, Missao missao, bool ganhouConsistencia) {
+  /// Diálogo exibido ao concluir todas as sessões de uma missão.
+  /// [onContinuar] é chamado quando o usuário fecha o diálogo, permitindo resetar estados se necessário.
+  static void mostrarParabens(BuildContext context, Missao missao, bool ganhouConsistencia, {VoidCallback? onContinuar}) {
     showDialog(
       context: context,
+      barrierDismissible: false, // Força o usuário a interagir com o botão para garantir o reset
       builder: (context) {
         return Dialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -52,9 +55,16 @@ class HiperfocoDialogs {
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6B4EFF), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12)),
-                  child: const Text('Continuar', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    if (onContinuar != null) onContinuar();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF6B4EFF), 
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), 
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12)
+                  ),
+                  child: const Text('Incrível!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 )
               ],
             ),
@@ -100,7 +110,7 @@ class HiperfocoDialogs {
             ElevatedButton(
               onPressed: () {
                 Navigator.of(dialogContext).pop();
-                onConfirm(); // Chama a lógica do controller que finaliza a sessão
+                onConfirm(); 
               },
               style: ElevatedButton.styleFrom(backgroundColor: quintosCompletados > 0 ? Colors.blueAccent : Colors.redAccent),
               child: Text(quintosCompletados > 0 ? 'Concluir' : 'Abortar', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),

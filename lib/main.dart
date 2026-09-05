@@ -16,6 +16,10 @@ final ValueNotifier<ThemeMode> temaNotifier = ValueNotifier(ThemeMode.dark);
 // Notifier global para controlar a navegação das abas
 final ValueNotifier<int> abaAtualNotifier = ValueNotifier(0);
 
+// Notifiers globais para o Estado do Timer (Sincronização entre telas)
+final ValueNotifier<bool> isTimerRodandoGlobal = ValueNotifier(false);
+final ValueNotifier<int> segundosRestantesGlobal = ValueNotifier(25 * 60);
+
 // Chaves Globais para os alvos do Tutorial
 final GlobalKey keyPerfil = GlobalKey();
 final GlobalKey keyNovaMissao = GlobalKey();
